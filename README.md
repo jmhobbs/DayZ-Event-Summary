@@ -4,70 +4,109 @@ Static DayZ ADM event reporting tools.
 
 This repo contains three CLIs:
 
-1. `teamguess`
-   - Scans one ADM file inside a time window
-   - Suggests team groupings in YAML
-   - Adds `display_name` for grouped players
+1. `init`
+   - scaffolds an event folder
+   - writes `config.yaml`
+   - writes `teams.yaml` for team events
 2. `eventbuild`
-   - Reads one ADM file, event settings, and reviewed team YAML
-   - Produces normalized JSON plus precomputed aggregates
+   - reads `config.yaml`
+   - parses the ADM log and reviewed team data
+   - writes the JSON event bundle
 3. `renderhtml`
-   - Reads the JSON bundle from `eventbuild`
-   - Produces a self-contained static HTML report
+   - reads `config.yaml`
+   - renders a static HTML report from the JSON bundle
 
 ## Build and run
 
-Run each tool with `go run`:
-
 ```bash
-go run ./cmd/teamguess
+go run ./cmd/init
 go run ./cmd/eventbuild
 go run ./cmd/renderhtml
 ```
 
-## Tool usage
+## Workflow
 
-### 1. teamguess
+1. Run `init` to create an event folder.
+2. Review `teams.yaml` if `teams_event: true`.
+3. Run `eventbuild --config ...`.
+4. Run `renderhtml --config ...`.
 
-Generate provisional team suggestions for one event window.
+## 1. init
+
+`init` is interactive by default. It prompts for:
+
+- event folder
+- ADM log path
+- start time, defaulting to the earliest timestamp found in the log
+- end time, defaulting to the latest timestamp found in the log
+- event name
+- assist window
+- whether the event is a team event
+
+At the end of interactive init, if the log file is outside the event folder, it offers to move the log file into that folder. The default answer is yes.
+
+Example:
 
 ```bash
-go run ./cmd/teamguess \
-  --adm ./DayZServer_x64_2026-05-02_15-33-25.ADM \
+go run ./cmd/init
+```
+
+You can also prefill or fully bypass prompts:
+
+```bash
+go run ./cmd/init \
+  --dir ./battle-at-blackjack \
+  --log-file ./DayZServer_x64_2026-05-02_15-33-25.ADM \
   --start 15:33:25 \
   --end 20:52:21 \
-  --out ./team-suggestions.yaml
+  --event-name "Battle at Blackjack Valley" \
+  --assist-window-seconds 30 \
+  --teams-event=true \
+  --no-input
 ```
 
 Flags:
 
-- `--adm`: ADM file path
-- `--start`: event start time, `HH:MM:SS` or RFC3339
-- `--end`: event end time, `HH:MM:SS` or RFC3339
-- `--out`: output YAML path, optional, defaults to stdout
+- `--dir`: event folder to create
+- `--log-file`: ADM log path
+- `--start`: event start time, `HH:MM:SS`
+- `--end`: event end time, `HH:MM:SS`
+- `--event-name`: event name
+- `--assist-window-seconds`: assist window in seconds
+- `--teams-event`: `true` or `false`
+- `--no-input`: disable prompts and require missing values from flags
+- `--force`: allow overwrite of existing `config.yaml` or `teams.yaml`
 
-### 2. eventbuild
+`init` writes:
 
-Generate the JSON event bundle.
+- `config.yaml`
+- `teams.yaml` only when `teams_event: true`
+
+It does not pre-create `data/` or `html/`.
+
+## 2. eventbuild
+
+Generate the JSON event bundle from `config.yaml`.
 
 ```bash
 go run ./cmd/eventbuild \
-  --adm ./DayZServer_x64_2026-05-02_15-33-25.ADM \
-  --start 15:33:25 \
-  --end 20:52:21 \
-  --event-config ./event-settings.yaml \
-  --teams ./team-suggestions.yaml \
-  --out ./event-data
+  --config ./battle-at-blackjack/config.yaml
+```
+
+Optional overrides:
+
+```bash
+go run ./cmd/eventbuild \
+  --config ./battle-at-blackjack/config.yaml \
+  --teams ./custom-teams.yaml \
+  --out ./custom-data
 ```
 
 Flags:
 
-- `--adm`: ADM file path
-- `--start`: event start time, `HH:MM:SS` or RFC3339
-- `--end`: event end time, `HH:MM:SS` or RFC3339
-- `--event-config`: YAML event settings
-- `--teams`: reviewed team YAML
-- `--out`: output directory for the JSON bundle
+- `--config`: path to `config.yaml`
+- `--teams`: optional override for `teams.yaml`
+- `--out`: optional override for `data_dir`
 
 `eventbuild` writes:
 
@@ -78,35 +117,73 @@ Flags:
 - `teams.json`
 - `summary.json`
 
-### 3. renderhtml
+If `teams_event: true`, `eventbuild` requires sibling `teams.yaml` unless `--teams` is set.
 
-Generate the static HTML site from the JSON bundle.
+If `teams_event: false`, `eventbuild` runs without team config unless `--teams` is set explicitly.
+
+`eventbuild` still scans the full ADM for roster discovery. Any non-ignored player seen anywhere in the file is included in the JSON bundle and HTML site, even if they never take part in combat during the event window.
+
+## 3. renderhtml
+
+Generate the static HTML site from the bundle described by `config.yaml`.
 
 ```bash
 go run ./cmd/renderhtml \
-  --data-dir ./event-data \
-  --out ./site
+  --config ./battle-at-blackjack/config.yaml
+```
+
+Optional overrides:
+
+```bash
+go run ./cmd/renderhtml \
+  --config ./battle-at-blackjack/config.yaml \
+  --data-dir ./custom-data \
+  --out ./custom-html
 ```
 
 Flags:
 
-- `--data-dir`: directory created by `eventbuild`
-- `--out`: output directory for the rendered site
+- `--config`: path to `config.yaml`
+- `--data-dir`: optional override for `data_dir`
+- `--out`: optional override for `html_dir`
 
-## Config files
+## config.yaml
 
-### Event settings
-
-Example `event-settings.yaml`:
+Example team event config:
 
 ```yaml
-event_name: Saturday Teams Event
+log_file: ../DayZServer_x64_2026-05-02_15-33-25.ADM
+start: "15:33:25"
+end: "20:52:21"
+event_name: Battle at Blackjack Valley
 assist_window_seconds: 30
+teams_event: true
+data_dir: data
+html_dir: html
 ```
 
-### Team config
+Example singles config:
 
-`teamguess` writes the same shape that `eventbuild` consumes.
+```yaml
+log_file: ../DayZServer_x64_2026-05-02_15-33-25.ADM
+start: "17:40:00"
+end: "18:30:00"
+event_name: Sunday Singles Event
+assist_window_seconds: 30
+teams_event: false
+data_dir: data
+html_dir: html
+```
+
+Notes:
+
+- `log_file`, `data_dir`, and `html_dir` resolve relative to `config.yaml`
+- absolute paths still work
+- `start` and `end` use `HH:MM:SS`
+- `event_name` is required
+- `assist_window_seconds` is always explicit
+
+## teams.yaml
 
 Grouped team members can include:
 
@@ -123,89 +200,70 @@ ignored:
     preferred_name: Some Player
 ```
 
-`eventbuild` will drop ignored players from the roster, events, stats, summaries, and rendered output.
-
-`eventbuild` still scans the full ADM for roster discovery. Any non-ignored player seen anywhere in the file is included in the JSON bundle and HTML site, even if they never take part in combat during the event window.
+Ignored players are dropped from the roster, events, stats, summaries, and rendered output.
 
 ## Example: teams event
 
-1. Generate suggestions:
+1. Scaffold the event:
 
 ```bash
-go run ./cmd/teamguess \
-  --adm ./DayZServer_x64_2026-05-02_15-33-25.ADM \
+go run ./cmd/init \
+  --dir ./battle-at-blackjack \
+  --log-file ./DayZServer_x64_2026-05-02_15-33-25.ADM \
   --start 15:33:25 \
   --end 20:52:21 \
-  --out ./team-suggestions.yaml
+  --event-name "Battle at Blackjack Valley" \
+  --assist-window-seconds 30 \
+  --teams-event=true \
+  --no-input
 ```
 
-2. Review and edit `team-suggestions.yaml`.
+2. Review `./battle-at-blackjack/teams.yaml`.
 
-3. Create `event-settings.yaml`:
-
-```yaml
-event_name: Saturday Teams Event
-assist_window_seconds: 30
-```
-
-4. Build the event bundle:
+3. Build data:
 
 ```bash
 go run ./cmd/eventbuild \
-  --adm ./DayZServer_x64_2026-05-02_15-33-25.ADM \
-  --start 15:33:25 \
-  --end 20:52:21 \
-  --event-config ./event-settings.yaml \
-  --teams ./team-suggestions.yaml \
-  --out ./event-data
+  --config ./battle-at-blackjack/config.yaml
 ```
 
-5. Render the HTML:
+4. Render HTML:
 
 ```bash
 go run ./cmd/renderhtml \
-  --data-dir ./event-data \
-  --out ./site
+  --config ./battle-at-blackjack/config.yaml
 ```
 
-Open `./site/index.html`.
+5. Open `./battle-at-blackjack/html/index.html`.
 
 ## Example: singles event
 
-For a singles event, skip team guessing and provide an empty team file.
+1. Scaffold the event:
 
-Create `singles-settings.yaml`:
-
-```yaml
-event_name: Sunday Singles Event
-assist_window_seconds: 30
+```bash
+go run ./cmd/init \
+  --dir ./sunday-singles \
+  --log-file ./DayZServer_x64_2026-05-02_15-33-25.ADM \
+  --start 17:40:00 \
+  --end 18:30:00 \
+  --event-name "Sunday Singles Event" \
+  --assist-window-seconds 30 \
+  --teams-event=false \
+  --no-input
 ```
 
-Create `singles-teams.yaml`:
-
-```yaml
-teams: []
-ungrouped: []
-```
-
-Build the event bundle:
+2. Build data:
 
 ```bash
 go run ./cmd/eventbuild \
-  --adm ./DayZServer_x64_2026-05-02_15-33-25.ADM \
-  --start 17:40:00 \
-  --end 18:30:00 \
-  --event-config ./singles-settings.yaml \
-  --teams ./singles-teams.yaml \
-  --out ./singles-data
+  --config ./sunday-singles/config.yaml
 ```
 
-Render the HTML:
+3. Render HTML:
 
 ```bash
 go run ./cmd/renderhtml \
-  --data-dir ./singles-data \
-  --out ./singles-site
+  --config ./sunday-singles/config.yaml
 ```
 
-Open `./singles-site/index.html`.
+4. Open `./sunday-singles/html/index.html`.

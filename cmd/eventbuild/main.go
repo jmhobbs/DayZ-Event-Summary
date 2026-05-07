@@ -3,90 +3,138 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
 	"amd-report/internal/eventbuild"
+	"amd-report/internal/runconfig"
 	"amd-report/internal/teamguess"
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := run(os.Args[1:], os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "eventbuild: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	var admPath string
-	var startValue string
-	var endValue string
-	var eventConfigPath string
-	var teamConfigPath string
-	var outputDir string
-
-	flag.StringVar(&admPath, "adm", "", "Path to the ADM file")
-	flag.StringVar(&startValue, "start", "", "Event start time (HH:MM:SS or RFC3339)")
-	flag.StringVar(&endValue, "end", "", "Event end time (HH:MM:SS or RFC3339)")
-	flag.StringVar(&eventConfigPath, "event-config", "", "Path to the event settings YAML")
-	flag.StringVar(&teamConfigPath, "teams", "", "Path to the reviewed team YAML")
-	flag.StringVar(&outputDir, "out", "", "Output directory for the JSON bundle")
-	flag.Parse()
-
-	if admPath == "" || startValue == "" || endValue == "" || eventConfigPath == "" || teamConfigPath == "" || outputDir == "" {
-		return fmt.Errorf("--adm, --start, --end, --event-config, --teams, and --out are required")
+func run(args []string, stderr io.Writer) error {
+	options, err := parseOptions(args)
+	if err != nil {
+		return err
 	}
 
-	start, err := teamguess.ParseClock(startValue)
+	config, err := runconfig.LoadFile(options.ConfigPath)
 	if err != nil {
-		return fmt.Errorf("parse --start: %w", err)
-	}
-	end, err := teamguess.ParseClock(endValue)
-	if err != nil {
-		return fmt.Errorf("parse --end: %w", err)
+		return err
 	}
 
-	admFile, err := os.Open(admPath)
+	paths := resolvePaths(options.ConfigPath, config, options.TeamConfigPath, options.OutputDir)
+	start, err := teamguess.ParseClock(config.Start)
 	if err != nil {
-		return fmt.Errorf("open ADM file: %w", err)
+		return fmt.Errorf("parse start: %w", err)
+	}
+	end, err := teamguess.ParseClock(config.End)
+	if err != nil {
+		return fmt.Errorf("parse end: %w", err)
+	}
+
+	admFile, err := os.Open(paths.LogFilePath)
+	if err != nil {
+		return fmt.Errorf("open log file: %w", err)
 	}
 	defer admFile.Close()
 
-	eventConfigFile, err := os.Open(eventConfigPath)
-	if err != nil {
-		return fmt.Errorf("open event config: %w", err)
-	}
-	defer eventConfigFile.Close()
-
-	teamConfigFile, err := os.Open(teamConfigPath)
-	if err != nil {
-		return fmt.Errorf("open team config: %w", err)
-	}
-	defer teamConfigFile.Close()
-
-	settings, err := eventbuild.LoadEventSettings(eventConfigFile)
-	if err != nil {
-		return err
-	}
-	teams, err := eventbuild.LoadTeamConfig(teamConfigFile)
+	teams, err := loadTeamConfig(paths.TeamConfigPath)
 	if err != nil {
 		return err
 	}
 
-	bundle, err := eventbuild.Build(admFile, filepath.Base(admPath), eventbuild.BuildOptions{
+	bundle, err := eventbuild.Build(admFile, filepath.Base(paths.LogFilePath), eventbuild.BuildOptions{
 		Window:      teamguess.Window{Start: start, End: end},
-		WindowStart: startValue,
-		WindowEnd:   endValue,
-		Settings:    settings,
-		Teams:       teams,
+		WindowStart: config.Start,
+		WindowEnd:   config.End,
+		Settings: eventbuild.EventSettings{
+			EventName:           config.EventName,
+			AssistWindowSeconds: config.AssistWindowSeconds,
+		},
+		Teams: teams,
 	})
 	if err != nil {
 		return err
 	}
 
 	for _, warning := range bundle.Warnings {
-		fmt.Fprintln(os.Stderr, warning)
+		fmt.Fprintln(stderr, warning)
 	}
 
-	return eventbuild.WriteBundle(bundle, outputDir)
+	return eventbuild.WriteBundle(bundle, paths.OutputDir)
+}
+
+type options struct {
+	ConfigPath     string
+	TeamConfigPath string
+	OutputDir      string
+}
+
+type paths struct {
+	LogFilePath    string
+	TeamConfigPath string
+	OutputDir      string
+}
+
+func parseOptions(args []string) (options, error) {
+	var parsed options
+	flags := flag.NewFlagSet("eventbuild", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	flags.StringVar(&parsed.ConfigPath, "config", "", "Path to config.yaml")
+	flags.StringVar(&parsed.TeamConfigPath, "teams", "", "Optional path to teams.yaml")
+	flags.StringVar(&parsed.OutputDir, "out", "", "Optional output directory override")
+	if err := flags.Parse(args); err != nil {
+		return options{}, err
+	}
+	if parsed.ConfigPath == "" {
+		return options{}, fmt.Errorf("--config is required")
+	}
+
+	return parsed, nil
+}
+
+func resolvePaths(configPath string, config runconfig.Config, teamOverride string, outputOverride string) paths {
+	resolved := paths{
+		LogFilePath: runconfig.ResolvePath(configPath, config.LogFile),
+		OutputDir:   runconfig.ResolvePath(configPath, config.DataDir),
+	}
+	if outputOverride != "" {
+		resolved.OutputDir = outputOverride
+	}
+	if teamOverride != "" {
+		resolved.TeamConfigPath = teamOverride
+		return resolved
+	}
+	if config.TeamsEvent {
+		resolved.TeamConfigPath = filepath.Join(filepath.Dir(configPath), "teams.yaml")
+	}
+
+	return resolved
+}
+
+func loadTeamConfig(path string) (eventbuild.TeamConfig, error) {
+	if path == "" {
+		return eventbuild.TeamConfig{}, nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return eventbuild.TeamConfig{}, fmt.Errorf("open team config: %w", err)
+	}
+	defer file.Close()
+
+	teams, err := eventbuild.LoadTeamConfig(file)
+	if err != nil {
+		return eventbuild.TeamConfig{}, err
+	}
+
+	return teams, nil
 }
