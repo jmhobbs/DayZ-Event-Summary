@@ -199,14 +199,15 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 	teamsIndexContent := readFile(t, filepath.Join(outputDir, "teams", "index.html"))
 	hitsIndexContent := readFile(t, filepath.Join(outputDir, "hits", "index.html"))
 	killsIndexContent := readFile(t, filepath.Join(outputDir, "kills", "index.html"))
-	groupedContent := readFile(t, filepath.Join(outputDir, "players", safeIDFileName("grouped-player")+".html"))
+	groupedPlayerFile := playerFileName("One", "grouped-player", false)
+	groupedContent := readFile(t, filepath.Join(outputDir, "players", groupedPlayerFile))
 	teamContent := readFile(t, filepath.Join(outputDir, "teams", slugify("Alpha")+".html"))
 	cssContent := readFile(t, filepath.Join(outputDir, "assets", "style.css"))
 
 	assert.Contains(t, indexContent, "Test Event")
 	assert.Contains(t, indexContent, "One")
 	assert.Contains(t, indexContent, "Solo Survivor")
-	assert.Contains(t, indexContent, "players/"+safeIDFileName("grouped-player")+".html")
+	assert.Contains(t, indexContent, "players/"+groupedPlayerFile)
 	assert.Contains(t, indexContent, "teams/"+slugify("Alpha")+".html")
 	assert.Contains(t, indexContent, "players/index.html")
 	assert.Contains(t, indexContent, "teams/index.html")
@@ -277,7 +278,7 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 
 	assert.Contains(t, teamContent, "Alpha")
 	assert.Contains(t, teamContent, "One")
-	assert.Contains(t, teamContent, "../players/"+safeIDFileName("grouped-player")+".html")
+	assert.Contains(t, teamContent, "../players/"+groupedPlayerFile)
 	assert.NotContains(t, teamContent, ">Back<")
 	assert.Contains(t, teamContent, "../players/index.html\">Players<")
 	assert.Contains(t, teamContent, "index.html\">Teams<")
@@ -288,6 +289,25 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 
 	assert.Contains(t, cssContent, "--color-bg")
 	assert.Contains(t, cssContent, "--space-4")
+}
+
+func TestNewRendererAddsHashOnlyForCollisions(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := newRenderer(Bundle{
+		Players: eventbuild.PlayersFile{
+			Players: []eventbuild.PlayerReport{
+				{PlayerID: "alpha-1", DisplayName: "Alpha One"},
+				{PlayerID: "alpha-2", DisplayName: "Alpha One"},
+				{PlayerID: "solo-1", DisplayName: "Solo Survivor"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, "solo-survivor.html", renderer.playerFile("solo-1"))
+	assert.Equal(t, "alpha-one-"+shortIDHash("alpha-1")+".html", renderer.playerFile("alpha-1"))
+	assert.Equal(t, "alpha-one-"+shortIDHash("alpha-2")+".html", renderer.playerFile("alpha-2"))
 }
 
 func writeJSONFile(t *testing.T, path string, value any) {

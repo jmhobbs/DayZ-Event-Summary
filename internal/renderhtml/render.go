@@ -1,8 +1,8 @@
 package renderhtml
 
 import (
+	"crypto/sha1"
 	"embed"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -308,8 +308,8 @@ func newRenderer(bundle Bundle) (*renderer, error) {
 
 	for _, player := range bundle.Players.Players {
 		renderer.playerReports[player.PlayerID] = player
-		renderer.playerFiles[player.PlayerID] = safeIDFileName(player.PlayerID) + ".html"
 	}
+	assignPlayerFiles(renderer.playerFiles, bundle.Players.Players)
 	for _, team := range bundle.Teams.Teams {
 		renderer.teamReports[team.Name] = team
 		renderer.teamFiles[team.Name] = slugify(team.Name) + ".html"
@@ -812,7 +812,7 @@ func (r *renderer) playerFile(playerID string) string {
 	if file, ok := r.playerFiles[playerID]; ok {
 		return file
 	}
-	return safeIDFileName(playerID) + ".html"
+	return playerFileName(playerID, playerID, true)
 }
 
 func (r *renderer) teamFile(teamName string) string {
@@ -876,11 +876,41 @@ func breakdownRows(values map[string]int) []breakdownRow {
 	return rows
 }
 
-func safeIDFileName(value string) string {
-	return hex.EncodeToString([]byte(value))
+func assignPlayerFiles(playerFiles map[string]string, players []eventbuild.PlayerReport) {
+	slugCounts := map[string]int{}
+	for _, player := range players {
+		slugCounts[playerSlug(player.DisplayName)]++
+	}
+
+	for _, player := range players {
+		slug := playerSlug(player.DisplayName)
+		playerFiles[player.PlayerID] = playerFileName(slug, player.PlayerID, slugCounts[slug] > 1)
+	}
+}
+
+func playerFileName(name string, playerID string, includeHash bool) string {
+	slug := playerSlug(name)
+	if !includeHash {
+		return slug + ".html"
+	}
+
+	return fmt.Sprintf("%s-%s.html", slug, shortIDHash(playerID))
+}
+
+func playerSlug(name string) string {
+	return slugifyWithFallback(name, "player")
+}
+
+func shortIDHash(value string) string {
+	sum := sha1.Sum([]byte(value))
+	return fmt.Sprintf("%x", sum[:4])
 }
 
 func slugify(value string) string {
+	return slugifyWithFallback(value, "team")
+}
+
+func slugifyWithFallback(value string, fallback string) string {
 	var builder strings.Builder
 	lastDash := false
 	for _, r := range strings.ToLower(strings.TrimSpace(value)) {
@@ -896,7 +926,7 @@ func slugify(value string) string {
 	}
 	slug := strings.Trim(builder.String(), "-")
 	if slug == "" {
-		return "team"
+		return fallback
 	}
 	return slug
 }
