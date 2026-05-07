@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"amd-report/internal/runconfig"
+	"github.com/jmhobbs/dayz-event-summary/internal/runconfig"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

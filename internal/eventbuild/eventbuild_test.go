@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"amd-report/internal/teamguess"
+	"github.com/jmhobbs/dayz-event-summary/internal/teamguess"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

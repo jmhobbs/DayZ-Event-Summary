@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"amd-report/internal/initcmd"
+	"github.com/jmhobbs/dayz-event-summary/internal/initcmd"
 )
 
 func main() {

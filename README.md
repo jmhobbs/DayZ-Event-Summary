@@ -1,6 +1,10 @@
-# amd-report
+# DayZ Event Summary
 
-Static DayZ ADM event reporting tools.
+Generate a static HTML report from a DayZ .ADM log file. Intended for use with events.
+
+Created for [WILDLANDZ](https://www.wildlandz.com/")
+
+## What is it?
 
 This repo contains three CLIs:
 
@@ -16,27 +20,19 @@ This repo contains three CLIs:
    - reads `config.yaml`
    - renders a static HTML report from the JSON bundle
 
-## Build and run
-
-```bash
-go run ./cmd/init
-go run ./cmd/eventbuild
-go run ./cmd/renderhtml
-```
-
 ## Workflow
 
-1. Run `init` to create an event folder.
-2. Review `teams.yaml` if `teams_event: true`.
-3. Run `eventbuild --config ...`.
-4. Run `renderhtml --config ...`.
+1. Run `init <your-log.ADM>` to create an event folder
+2. Tweak `config.yaml` if needed (e.g. adjust event times, assist window, or event name)
+3. Review `teams.yaml` if `teams_event: true`
+4. Run `eventbuild --config <path/to/config.yaml>`
+5. Run `renderhtml --config <path/to/config.yaml>`
 
-## 1. init
+### `init`
 
 `init` is interactive by default. It prompts for:
 
 - event folder
-- ADM log path
 - start time, defaulting to the earliest timestamp found in the log
 - end time, defaulting to the latest timestamp found in the log
 - event name
@@ -84,7 +80,7 @@ Flags:
 
 It does not pre-create `data/` or `html/`.
 
-## 2. eventbuild
+### `eventbuild`
 
 Generate the JSON event bundle from `config.yaml`.
 
@@ -123,7 +119,7 @@ If `teams_event: false`, `eventbuild` runs without team config unless `--teams` 
 
 `eventbuild` still scans the full ADM for roster discovery. Any non-ignored player seen anywhere in the file is included in the JSON bundle and HTML site, even if they never take part in combat during the event window.
 
-## 3. renderhtml
+### `renderhtml`
 
 Generate the static HTML site from the bundle described by `config.yaml`.
 

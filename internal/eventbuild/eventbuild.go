@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"amd-report/internal/teamguess"
+	"github.com/jmhobbs/dayz-event-summary/internal/teamguess"
 )
 
 var (

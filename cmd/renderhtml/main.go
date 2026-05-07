@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"amd-report/internal/renderhtml"
-	"amd-report/internal/runconfig"
+	"github.com/jmhobbs/dayz-event-summary/internal/renderhtml"
+	"github.com/jmhobbs/dayz-event-summary/internal/runconfig"
 )
 
 func main() {

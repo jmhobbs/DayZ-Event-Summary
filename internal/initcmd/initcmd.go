@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"amd-report/internal/runconfig"
-	"amd-report/internal/teamguess"
+	"github.com/jmhobbs/dayz-event-summary/internal/runconfig"
+	"github.com/jmhobbs/dayz-event-summary/internal/teamguess"
 
 	"github.com/fatih/color"
 )

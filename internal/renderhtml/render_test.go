@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"amd-report/internal/eventbuild"
+	"github.com/jmhobbs/dayz-event-summary/internal/eventbuild"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

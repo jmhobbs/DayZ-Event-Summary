@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"amd-report/internal/eventbuild"
+	"github.com/jmhobbs/dayz-event-summary/internal/eventbuild"
 	"github.com/yosssi/ace"
 )
 

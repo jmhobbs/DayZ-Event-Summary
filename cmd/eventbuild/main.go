@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"amd-report/internal/eventbuild"
-	"amd-report/internal/runconfig"
-	"amd-report/internal/teamguess"
+	"github.com/jmhobbs/dayz-event-summary/internal/eventbuild"
+	"github.com/jmhobbs/dayz-event-summary/internal/runconfig"
+	"github.com/jmhobbs/dayz-event-summary/internal/teamguess"
 )
 
 func main() {

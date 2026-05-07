@@ -1,4 +1,4 @@
-module amd-report
+module github.com/jmhobbs/dayz-event-summary
 
 go 1.25.0
 
