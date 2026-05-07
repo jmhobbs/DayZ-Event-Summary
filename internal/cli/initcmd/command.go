@@ -1,27 +1,21 @@
-package main
+package initcmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	"os"
+	"io"
 	"strconv"
 
-	"github.com/jmhobbs/dayz-event-summary/internal/initcmd"
+	appinitcmd "github.com/jmhobbs/dayz-event-summary/internal/initcmd"
+	"github.com/peterbourgon/ff/v3/ffcli"
 )
 
-func main() {
-	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintf(os.Stderr, "init: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func run(args []string) error {
-	var options initcmd.Options
+func New(stdin io.Reader, stdout io.Writer, stderr io.Writer) *ffcli.Command {
+	var options appinitcmd.Options
 	var teamsEvent optionalBool
-
 	flags := flag.NewFlagSet("init", flag.ContinueOnError)
-	flags.SetOutput(os.Stderr)
+	flags.SetOutput(stderr)
 	flags.BoolVar(&options.NoColor, "no-color", false, "Disable color output")
 	flags.StringVar(&options.Directory, "dir", "", "Event folder to create")
 	flags.StringVar(&options.Start, "start", "", "Event start time (HH:MM:SS)")
@@ -31,23 +25,32 @@ func run(args []string) error {
 	flags.Var(&teamsEvent, "teams-event", "Whether this is a team event")
 	flags.BoolVar(&options.Force, "force", false, "Overwrite existing scaffold files")
 	flags.BoolVar(&options.NoInput, "no-input", false, "Disable prompts and require values from flags")
-	if err := flags.Parse(args); err != nil {
-		return err
-	}
 
-	if flags.Arg(0) == "" {
-		return fmt.Errorf("missing required log file argument")
-	}
-	options.LogFile = flags.Arg(0)
+	return &ffcli.Command{
+		Name:       "init",
+		ShortUsage: "dayz-event-summary init [flags] <log-file>",
+		ShortHelp:  "Scaffold an event folder and write config files.",
+		FlagSet:    flags,
+		Exec: func(_ context.Context, args []string) error {
+			if len(args) == 0 || args[0] == "" {
+				return fmt.Errorf("missing required log file argument")
+			}
 
-	if teamsEvent.set {
-		options.TeamsEvent = &teamsEvent.value
-	}
-	options.Stdin = os.Stdin
-	options.Stdout = os.Stdout
-	options.Stderr = os.Stderr
+			runOptions := options
+			runOptions.LogFile = args[0]
+			if teamsEvent.set {
+				value := teamsEvent.value
+				runOptions.TeamsEvent = &value
+			} else {
+				runOptions.TeamsEvent = nil
+			}
+			runOptions.Stdin = stdin
+			runOptions.Stdout = stdout
+			runOptions.Stderr = stderr
 
-	return initcmd.Run(options)
+			return appinitcmd.Run(runOptions)
+		},
+	}
 }
 
 type optionalBool struct {

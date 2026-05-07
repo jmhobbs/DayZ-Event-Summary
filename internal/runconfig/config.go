@@ -79,9 +79,15 @@ func LoadFile(path string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("open config: %w", err)
 	}
-	defer file.Close()
+	config, err := Load(file)
+	if closeErr := file.Close(); closeErr != nil {
+		if err != nil {
+			return Config{}, fmt.Errorf("%w; close config: %v", err, closeErr)
+		}
+		return Config{}, fmt.Errorf("close config: %w", closeErr)
+	}
 
-	return Load(file)
+	return config, err
 }
 
 func Write(writer io.Writer, config Config) error {

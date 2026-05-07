@@ -1,6 +1,8 @@
-package main
+package buildcmd
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -10,27 +12,48 @@ import (
 	"github.com/jmhobbs/dayz-event-summary/internal/eventbuild"
 	"github.com/jmhobbs/dayz-event-summary/internal/runconfig"
 	"github.com/jmhobbs/dayz-event-summary/internal/teamguess"
+	"github.com/peterbourgon/ff/v3/ffcli"
 )
 
-func main() {
-	if err := run(os.Args[1:], os.Stderr); err != nil {
-		fmt.Fprintf(os.Stderr, "eventbuild: %v\n", err)
-		os.Exit(1)
+type options struct {
+	ConfigPath     string
+	TeamConfigPath string
+	OutputDir      string
+}
+
+type paths struct {
+	LogFilePath    string
+	TeamConfigPath string
+	OutputDir      string
+}
+
+func New(stderr io.Writer) *ffcli.Command {
+	var parsed options
+	flags := newFlagSet(stderr, &parsed)
+
+	return &ffcli.Command{
+		Name:       "build",
+		ShortUsage: "dayz-event-summary build --config <path/to/config.yaml>",
+		ShortHelp:  "Generate the JSON event bundle from config.yaml.",
+		FlagSet:    flags,
+		Exec: func(_ context.Context, _ []string) error {
+			validated, err := validateOptions(parsed)
+			if err != nil {
+				return err
+			}
+
+			return run(validated, stderr)
+		},
 	}
 }
 
-func run(args []string, stderr io.Writer) error {
-	options, err := parseOptions(args)
+func run(parsed options, stderr io.Writer) (err error) {
+	config, err := runconfig.LoadFile(parsed.ConfigPath)
 	if err != nil {
 		return err
 	}
 
-	config, err := runconfig.LoadFile(options.ConfigPath)
-	if err != nil {
-		return err
-	}
-
-	paths := resolvePaths(options.ConfigPath, config, options.TeamConfigPath, options.OutputDir)
+	paths := resolvePaths(parsed.ConfigPath, config, parsed.TeamConfigPath, parsed.OutputDir)
 	start, err := teamguess.ParseClock(config.Start)
 	if err != nil {
 		return fmt.Errorf("parse start: %w", err)
@@ -44,7 +67,11 @@ func run(args []string, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("open log file: %w", err)
 	}
-	defer admFile.Close()
+	defer func() {
+		if closeErr := admFile.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close log file: %w", closeErr))
+		}
+	}()
 
 	teams, err := loadTeamConfig(paths.TeamConfigPath)
 	if err != nil {
@@ -66,34 +93,34 @@ func run(args []string, stderr io.Writer) error {
 	}
 
 	for _, warning := range bundle.Warnings {
-		fmt.Fprintln(stderr, warning)
+		if _, err := fmt.Fprintln(stderr, warning); err != nil {
+			return fmt.Errorf("write warning: %w", err)
+		}
 	}
 
 	return eventbuild.WriteBundle(bundle, paths.OutputDir)
 }
 
-type options struct {
-	ConfigPath     string
-	TeamConfigPath string
-	OutputDir      string
-}
-
-type paths struct {
-	LogFilePath    string
-	TeamConfigPath string
-	OutputDir      string
-}
-
 func parseOptions(args []string) (options, error) {
 	var parsed options
-	flags := flag.NewFlagSet("eventbuild", flag.ContinueOnError)
-	flags.SetOutput(os.Stderr)
-	flags.StringVar(&parsed.ConfigPath, "config", "", "Path to config.yaml")
-	flags.StringVar(&parsed.TeamConfigPath, "teams", "", "Optional path to teams.yaml")
-	flags.StringVar(&parsed.OutputDir, "out", "", "Optional output directory override")
+	flags := newFlagSet(os.Stderr, &parsed)
 	if err := flags.Parse(args); err != nil {
 		return options{}, err
 	}
+
+	return validateOptions(parsed)
+}
+
+func newFlagSet(stderr io.Writer, parsed *options) *flag.FlagSet {
+	flags := flag.NewFlagSet("build", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	flags.StringVar(&parsed.ConfigPath, "config", "", "Path to config.yaml")
+	flags.StringVar(&parsed.TeamConfigPath, "teams", "", "Optional path to teams.yaml")
+	flags.StringVar(&parsed.OutputDir, "out", "", "Optional output directory override")
+	return flags
+}
+
+func validateOptions(parsed options) (options, error) {
 	if parsed.ConfigPath == "" {
 		return options{}, fmt.Errorf("--config is required")
 	}
@@ -120,7 +147,7 @@ func resolvePaths(configPath string, config runconfig.Config, teamOverride strin
 	return resolved
 }
 
-func loadTeamConfig(path string) (eventbuild.TeamConfig, error) {
+func loadTeamConfig(path string) (_ eventbuild.TeamConfig, err error) {
 	if path == "" {
 		return eventbuild.TeamConfig{}, nil
 	}
@@ -129,7 +156,11 @@ func loadTeamConfig(path string) (eventbuild.TeamConfig, error) {
 	if err != nil {
 		return eventbuild.TeamConfig{}, fmt.Errorf("open team config: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close team config: %w", closeErr))
+		}
+	}()
 
 	teams, err := eventbuild.LoadTeamConfig(file)
 	if err != nil {

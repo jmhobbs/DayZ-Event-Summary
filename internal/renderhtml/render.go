@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"os"
@@ -574,10 +575,18 @@ func (r *renderer) execute(key string, path string, data any) error {
 	if err != nil {
 		return fmt.Errorf("create %s: %w", path, err)
 	}
-	defer file.Close()
 
 	if err := r.templates[key].Execute(file, data); err != nil {
+		if closeErr := file.Close(); closeErr != nil {
+			return errors.Join(
+				fmt.Errorf("render %s: %w", key, err),
+				fmt.Errorf("close %s: %w", path, closeErr),
+			)
+		}
 		return fmt.Errorf("render %s: %w", key, err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("close %s: %w", path, err)
 	}
 
 	return nil

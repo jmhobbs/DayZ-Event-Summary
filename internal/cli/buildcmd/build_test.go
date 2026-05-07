@@ -1,4 +1,4 @@
-package main
+package buildcmd
 
 import (
 	"testing"

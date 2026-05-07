@@ -6,27 +6,29 @@ Created for [WILDLANDZ](https://www.wildlandz.com/")
 
 ## What is it?
 
-This repo contains three CLIs:
+This repo contains one CLI with four subcommands:
 
 1. `init`
    - scaffolds an event folder
    - writes `config.yaml`
    - writes `teams.yaml` for team events
-2. `eventbuild`
+2. `build`
    - reads `config.yaml`
    - parses the ADM log and reviewed team data
    - writes the JSON event bundle
-3. `renderhtml`
+3. `render`
    - reads `config.yaml`
    - renders a static HTML report from the JSON bundle
+4. `version`
+   - prints the CLI version
 
 ## Workflow
 
-1. Run `init <your-log.ADM>` to create an event folder
+1. Run `dayz-event-summary init <your-log.ADM>` to create an event folder
 2. Tweak `config.yaml` if needed (e.g. adjust event times, assist window, or event name)
 3. Review `teams.yaml` if `teams_event: true`
-4. Run `eventbuild --config <path/to/config.yaml>`
-5. Run `renderhtml --config <path/to/config.yaml>`
+4. Run `dayz-event-summary build --config <path/to/config.yaml>`
+5. Run `dayz-event-summary render --config <path/to/config.yaml>`
 
 ### `init`
 
@@ -44,27 +46,26 @@ At the end of interactive init, if the log file is outside the event folder, it 
 Example:
 
 ```bash
-go run ./cmd/init
+go run ./cmd/dayz-event-summary init ./DayZServer_x64_2026-05-02_15-33-25.ADM
 ```
 
 You can also prefill or fully bypass prompts:
 
 ```bash
-go run ./cmd/init \
+go run ./cmd/dayz-event-summary init \
   --dir ./battle-at-blackjack \
-  --log-file ./DayZServer_x64_2026-05-02_15-33-25.ADM \
   --start 15:33:25 \
   --end 20:52:21 \
   --event-name "Battle at Blackjack Valley" \
   --assist-window-seconds 30 \
   --teams-event=true \
-  --no-input
+  --no-input \
+  ./DayZServer_x64_2026-05-02_15-33-25.ADM
 ```
 
 Flags:
 
 - `--dir`: event folder to create
-- `--log-file`: ADM log path
 - `--start`: event start time, `HH:MM:SS`
 - `--end`: event end time, `HH:MM:SS`
 - `--event-name`: event name
@@ -80,19 +81,19 @@ Flags:
 
 It does not pre-create `data/` or `html/`.
 
-### `eventbuild`
+### `build`
 
 Generate the JSON event bundle from `config.yaml`.
 
 ```bash
-go run ./cmd/eventbuild \
+go run ./cmd/dayz-event-summary build \
   --config ./battle-at-blackjack/config.yaml
 ```
 
 Optional overrides:
 
 ```bash
-go run ./cmd/eventbuild \
+go run ./cmd/dayz-event-summary build \
   --config ./battle-at-blackjack/config.yaml \
   --teams ./custom-teams.yaml \
   --out ./custom-data
@@ -104,7 +105,7 @@ Flags:
 - `--teams`: optional override for `teams.yaml`
 - `--out`: optional override for `data_dir`
 
-`eventbuild` writes:
+`build` writes:
 
 - `metadata.json`
 - `roster.json`
@@ -113,25 +114,25 @@ Flags:
 - `teams.json`
 - `summary.json`
 
-If `teams_event: true`, `eventbuild` requires sibling `teams.yaml` unless `--teams` is set.
+If `teams_event: true`, `build` requires sibling `teams.yaml` unless `--teams` is set.
 
-If `teams_event: false`, `eventbuild` runs without team config unless `--teams` is set explicitly.
+If `teams_event: false`, `build` runs without team config unless `--teams` is set explicitly.
 
-`eventbuild` still scans the full ADM for roster discovery. Any non-ignored player seen anywhere in the file is included in the JSON bundle and HTML site, even if they never take part in combat during the event window.
+`build` still scans the full ADM for roster discovery. Any non-ignored player seen anywhere in the file is included in the JSON bundle and HTML site, even if they never take part in combat during the event window.
 
-### `renderhtml`
+### `render`
 
 Generate the static HTML site from the bundle described by `config.yaml`.
 
 ```bash
-go run ./cmd/renderhtml \
+go run ./cmd/dayz-event-summary render \
   --config ./battle-at-blackjack/config.yaml
 ```
 
 Optional overrides:
 
 ```bash
-go run ./cmd/renderhtml \
+go run ./cmd/dayz-event-summary render \
   --config ./battle-at-blackjack/config.yaml \
   --data-dir ./custom-data \
   --out ./custom-html
@@ -142,6 +143,14 @@ Flags:
 - `--config`: path to `config.yaml`
 - `--data-dir`: optional override for `data_dir`
 - `--out`: optional override for `html_dir`
+
+### `version`
+
+Print the CLI version.
+
+```bash
+go run ./cmd/dayz-event-summary version
+```
 
 ## config.yaml
 
@@ -203,15 +212,15 @@ Ignored players are dropped from the roster, events, stats, summaries, and rende
 1. Scaffold the event:
 
 ```bash
-go run ./cmd/init \
+go run ./cmd/dayz-event-summary init \
   --dir ./battle-at-blackjack \
-  --log-file ./DayZServer_x64_2026-05-02_15-33-25.ADM \
   --start 15:33:25 \
   --end 20:52:21 \
   --event-name "Battle at Blackjack Valley" \
   --assist-window-seconds 30 \
   --teams-event=true \
-  --no-input
+  --no-input \
+  ./DayZServer_x64_2026-05-02_15-33-25.ADM
 ```
 
 2. Review `./battle-at-blackjack/teams.yaml`.
@@ -219,14 +228,14 @@ go run ./cmd/init \
 3. Build data:
 
 ```bash
-go run ./cmd/eventbuild \
+go run ./cmd/dayz-event-summary build \
   --config ./battle-at-blackjack/config.yaml
 ```
 
 4. Render HTML:
 
 ```bash
-go run ./cmd/renderhtml \
+go run ./cmd/dayz-event-summary render \
   --config ./battle-at-blackjack/config.yaml
 ```
 
@@ -237,28 +246,28 @@ go run ./cmd/renderhtml \
 1. Scaffold the event:
 
 ```bash
-go run ./cmd/init \
+go run ./cmd/dayz-event-summary init \
   --dir ./sunday-singles \
-  --log-file ./DayZServer_x64_2026-05-02_15-33-25.ADM \
   --start 17:40:00 \
   --end 18:30:00 \
   --event-name "Sunday Singles Event" \
   --assist-window-seconds 30 \
   --teams-event=false \
-  --no-input
+  --no-input \
+  ./DayZServer_x64_2026-05-02_15-33-25.ADM
 ```
 
 2. Build data:
 
 ```bash
-go run ./cmd/eventbuild \
+go run ./cmd/dayz-event-summary build \
   --config ./sunday-singles/config.yaml
 ```
 
 3. Render HTML:
 
 ```bash
-go run ./cmd/renderhtml \
+go run ./cmd/dayz-event-summary render \
   --config ./sunday-singles/config.yaml
 ```
 

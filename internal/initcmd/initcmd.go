@@ -2,6 +2,7 @@ package initcmd
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -179,8 +180,7 @@ func Run(options Options) error {
 		return fmt.Errorf("create config.yaml: %w", err)
 	}
 	if err := runconfig.Write(configFile, config); err != nil {
-		configFile.Close()
-		return err
+		return errors.Join(err, closeWithContext(configFile.Close, "close config.yaml"))
 	}
 	if err := configFile.Close(); err != nil {
 		return fmt.Errorf("close config.yaml: %w", err)
@@ -469,7 +469,6 @@ func suggestWindow(logFilePath string) (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("open log file for time suggestions: %w", err)
 	}
-	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	first := ""
@@ -485,10 +484,24 @@ func suggestWindow(logFilePath string) (string, string, error) {
 		last = match[1]
 	}
 	if err := scanner.Err(); err != nil {
-		return "", "", fmt.Errorf("scan log file for time suggestions: %w", err)
+		return "", "", errors.Join(
+			fmt.Errorf("scan log file for time suggestions: %w", err),
+			closeWithContext(file.Close, "close log file"),
+		)
+	}
+	if err := file.Close(); err != nil {
+		return "", "", fmt.Errorf("close log file: %w", err)
 	}
 
 	return first, last, nil
+}
+
+func closeWithContext(closeFn func() error, context string) error {
+	if err := closeFn(); err != nil {
+		return fmt.Errorf("%s: %w", context, err)
+	}
+
+	return nil
 }
 
 func slugify(value string) string {
