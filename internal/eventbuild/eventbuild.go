@@ -241,13 +241,7 @@ func buildRoster(players []teamguess.Player, assignments map[string]teamAssignme
 func rosterPlayers(roster map[string]rosterEntry) []RosterPlayer {
 	players := make([]RosterPlayer, 0, len(roster))
 	for _, entry := range roster {
-		players = append(players, RosterPlayer{
-			PlayerID:      entry.PlayerID,
-			PreferredName: entry.PreferredName,
-			DisplayName:   entry.DisplayName,
-			TeamName:      entry.TeamName,
-			SeenNames:     entry.SeenNames,
-		})
+		players = append(players, RosterPlayer(entry))
 	}
 
 	sort.Slice(players, func(i, j int) bool {

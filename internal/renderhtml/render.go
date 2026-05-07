@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -900,8 +899,4 @@ func slugify(value string) string {
 		return "team"
 	}
 	return slug
-}
-
-func readAsset(path string) ([]byte, error) {
-	return fs.ReadFile(assetsFS, path)
 }
