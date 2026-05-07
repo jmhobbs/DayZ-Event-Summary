@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/jmhobbs/dayz-event-summary/internal/cli/buildcmd"
+	"github.com/jmhobbs/dayz-event-summary/internal/cli/generateteamscmd"
 	"github.com/jmhobbs/dayz-event-summary/internal/cli/initcmd"
 	"github.com/jmhobbs/dayz-event-summary/internal/cli/rendercmd"
 	"github.com/jmhobbs/dayz-event-summary/internal/cli/versioncmd"
@@ -28,6 +29,7 @@ func New(options Options) *ffcli.Command {
 		FlagSet:    flags,
 		Subcommands: []*ffcli.Command{
 			initcmd.New(options.Stdin, options.Stdout, options.Stderr),
+			generateteamscmd.New(options.Stderr),
 			buildcmd.New(options.Stderr),
 			rendercmd.New(options.Stderr),
 			versioncmd.New(options.Stdout, options.Version),

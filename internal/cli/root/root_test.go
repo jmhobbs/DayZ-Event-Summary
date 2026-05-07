@@ -63,6 +63,11 @@ func TestRootDispatchesToSubcommands(t *testing.T) {
 			args:    []string{"render"},
 			wantErr: "--config is required",
 		},
+		{
+			name:    "generate-teams",
+			args:    []string{"generate-teams"},
+			wantErr: "--config is required",
+		},
 	}
 
 	for _, testCase := range testCases {

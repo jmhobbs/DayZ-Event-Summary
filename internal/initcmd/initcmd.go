@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/jmhobbs/dayz-event-summary/internal/runconfig"
-	"github.com/jmhobbs/dayz-event-summary/internal/teamguess"
 
 	"github.com/fatih/color"
 )
@@ -119,44 +118,12 @@ func Run(options Options) error {
 	}
 
 	configPath := filepath.Join(targetDir, "config.yaml")
-	teamsPath := filepath.Join(targetDir, "teams.yaml")
-	if err := checkOverwrite(options, prompter, configPath, teamsPath, teamsEvent); err != nil {
+	if err := checkOverwrite(options, prompter, configPath); err != nil {
 		return err
 	}
 
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return fmt.Errorf("create event folder: %w", err)
-	}
-
-	var rendered []byte
-	if teamsEvent {
-		startClock, err := teamguess.ParseClock(start)
-		if err != nil {
-			return fmt.Errorf("parse start: %w", err)
-		}
-		endClock, err := teamguess.ParseClock(end)
-		if err != nil {
-			return fmt.Errorf("parse end: %w", err)
-		}
-
-		input, err := os.Open(logFilePath)
-		if err != nil {
-			return fmt.Errorf("open log file: %w", err)
-		}
-
-		players, err := teamguess.ExtractPlayers(input, teamguess.Window{Start: startClock, End: endClock})
-		closeErr := input.Close()
-		if err != nil {
-			return fmt.Errorf("extract players: %w", err)
-		}
-		if closeErr != nil {
-			return fmt.Errorf("close log file: %w", closeErr)
-		}
-
-		rendered, err = teamguess.MarshalYAML(teamguess.Suggest(players))
-		if err != nil {
-			return fmt.Errorf("render teams.yaml: %w", err)
-		}
 	}
 
 	finalLogFilePath, err := maybeMoveLogFile(options, prompter, logFilePath, targetDir)
@@ -186,16 +153,10 @@ func Run(options Options) error {
 		return fmt.Errorf("close config.yaml: %w", err)
 	}
 
-	if teamsEvent {
-		if err := os.WriteFile(teamsPath, rendered, 0o644); err != nil {
-			return fmt.Errorf("write teams.yaml: %w", err)
-		}
-	}
-
 	fmt.Println("")
 	fmt.Printf(color.GreenString("✓")+" Event initialized in %s\n", targetDir)
 	if teamsEvent {
-		fmt.Println(color.YellowString("!") + " Teams file generated; please review before continuing.")
+		fmt.Printf("%s Run dayz-event-summary generate-teams --config %s to create teams.yaml.\n", color.YellowString("!"), configPath)
 	}
 
 	return nil
@@ -312,13 +273,10 @@ func (state promptState) readString(label string, defaultValue string) (string, 
 	return value, nil
 }
 
-func checkOverwrite(options Options, state promptState, configPath string, teamsPath string, teamsEvent bool) error {
+func checkOverwrite(options Options, state promptState, configPath string) error {
 	existing := []string{}
 	if fileExists(configPath) {
 		existing = append(existing, "config.yaml")
-	}
-	if teamsEvent && fileExists(teamsPath) {
-		existing = append(existing, "teams.yaml")
 	}
 	if len(existing) == 0 || options.Force {
 		return nil

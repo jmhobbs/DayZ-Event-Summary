@@ -6,29 +6,33 @@ Created for [WILDLANDZ](https://www.wildlandz.com/")
 
 ## What is it?
 
-This repo contains one CLI with four subcommands:
+This repo contains one CLI with five subcommands:
 
 1. `init`
    - scaffolds an event folder
    - writes `config.yaml`
-   - writes `teams.yaml` for team events
-2. `build`
+2. `generate-teams`
+   - reads `config.yaml`
+   - scans the ADM log within the configured event window
+   - writes `teams.yaml`
+3. `build`
    - reads `config.yaml`
    - parses the ADM log and reviewed team data
    - writes the JSON event bundle
-3. `render`
+4. `render`
    - reads `config.yaml`
    - renders a static HTML report from the JSON bundle
-4. `version`
+5. `version`
    - prints the CLI version
 
 ## Workflow
 
 1. Run `dayz-event-summary init <your-log.ADM>` to create an event folder
 2. Tweak `config.yaml` if needed (e.g. adjust event times, assist window, or event name)
-3. Review `teams.yaml` if `teams_event: true`
-4. Run `dayz-event-summary build --config <path/to/config.yaml>`
-5. Run `dayz-event-summary render --config <path/to/config.yaml>`
+3. Run `dayz-event-summary generate-teams --config <path/to/config.yaml>` if `teams_event: true`
+4. Review `teams.yaml`
+5. Run `dayz-event-summary build --config <path/to/config.yaml>`
+6. Run `dayz-event-summary render --config <path/to/config.yaml>`
 
 ### `init`
 
@@ -72,14 +76,43 @@ Flags:
 - `--assist-window-seconds`: assist window in seconds
 - `--teams-event`: `true` or `false`
 - `--no-input`: disable prompts and require missing values from flags
-- `--force`: allow overwrite of existing `config.yaml` or `teams.yaml`
+- `--force`: allow overwrite of existing `config.yaml`
 
 `init` writes:
 
 - `config.yaml`
-- `teams.yaml` only when `teams_event: true`
 
 It does not pre-create `data/` or `html/`.
+
+If `teams_event: true`, run `generate-teams` after `init` to create `teams.yaml`.
+
+### `generate-teams`
+
+Generate `teams.yaml` from `config.yaml`.
+
+```bash
+go run ./cmd/dayz-event-summary generate-teams \
+  --config ./battle-at-blackjack/config.yaml
+```
+
+Optional overrides:
+
+```bash
+go run ./cmd/dayz-event-summary generate-teams \
+  --config ./battle-at-blackjack/config.yaml \
+  --out ./custom-teams.yaml
+```
+
+Flags:
+
+- `--config`: path to `config.yaml`
+- `--out`: optional output path for `teams.yaml`
+
+`generate-teams` writes:
+
+- `teams.yaml` next to `config.yaml` by default
+
+It requires `teams_event: true` in config and refuses to overwrite an existing output file.
 
 ### `build`
 
@@ -223,23 +256,30 @@ go run ./cmd/dayz-event-summary init \
   ./DayZServer_x64_2026-05-02_15-33-25.ADM
 ```
 
-2. Review `./battle-at-blackjack/teams.yaml`.
+2. Generate team suggestions:
 
-3. Build data:
+```bash
+go run ./cmd/dayz-event-summary generate-teams \
+  --config ./battle-at-blackjack/config.yaml
+```
+
+3. Review `./battle-at-blackjack/teams.yaml`.
+
+4. Build data:
 
 ```bash
 go run ./cmd/dayz-event-summary build \
   --config ./battle-at-blackjack/config.yaml
 ```
 
-4. Render HTML:
+5. Render HTML:
 
 ```bash
 go run ./cmd/dayz-event-summary render \
   --config ./battle-at-blackjack/config.yaml
 ```
 
-5. Open `./battle-at-blackjack/html/index.html`.
+6. Open `./battle-at-blackjack/html/index.html`.
 
 ## Example: singles event
 

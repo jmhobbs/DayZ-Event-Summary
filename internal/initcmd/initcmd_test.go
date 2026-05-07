@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRunWritesConfigAndTeamsForTeamEvents(t *testing.T) {
+func TestRunWritesConfigForTeamEventsWithoutTeamsFile(t *testing.T) {
 	t.Parallel()
 
 	workspace := t.TempDir()
@@ -47,10 +47,9 @@ func TestRunWritesConfigAndTeamsForTeamEvents(t *testing.T) {
 	assert.Equal(t, "html", config.HTMLDir)
 	assert.True(t, config.TeamsEvent)
 
-	teamConfig, err := os.ReadFile(filepath.Join(targetDir, "teams.yaml"))
-	require.NoError(t, err)
-	assert.Contains(t, string(teamConfig), "teams:")
-	assert.Contains(t, string(teamConfig), "Foxes")
+	_, err = os.Stat(filepath.Join(targetDir, "teams.yaml"))
+	require.Error(t, err)
+	assert.True(t, os.IsNotExist(err))
 }
 
 func TestRunPrintsUpdatedStatusOutput(t *testing.T) {
@@ -84,7 +83,8 @@ func TestRunPrintsUpdatedStatusOutput(t *testing.T) {
 	assert.Contains(t, output, "DayZ Event Summary")
 	assert.Contains(t, output, "┌────────────────────┐")
 	assert.Contains(t, output, "✓ Event initialized in "+targetDir)
-	assert.Contains(t, output, "! Teams file generated; please review before continuing.")
+	assert.Contains(t, output, "Run dayz-event-summary generate-teams --config "+filepath.Join(targetDir, "config.yaml")+" to create teams.yaml.")
+	assert.NotContains(t, output, "Teams file generated")
 }
 
 func TestRunSkipsTeamsForSingles(t *testing.T) {
