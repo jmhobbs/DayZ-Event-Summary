@@ -1,0 +1,8 @@
+{{if .}}
+dl.meta-grid
+  {{range .}}
+  div.meta-row
+    dt {{.Label}}
+    dd {{.Value}}
+  {{end}}
+{{end}}

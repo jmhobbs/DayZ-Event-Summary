@@ -1,0 +1,11 @@
+{{if .}}
+.stats-grid
+  {{range .}}
+  article.stat-card
+    p.stat-label {{.Label}}
+    p.stat-value {{.Value}}
+    {{if .Note}}
+    p.stat-note {{.Note}}
+    {{end}}
+  {{end}}
+{{end}}

@@ -1,0 +1,8 @@
+{{if .Href}}
+a.entity-link href="{{.Href}}" {{.Display}}
+{{else}}
+span.entity-text {{.Display}}
+{{end}}
+{{if .Meta}}
+div.entity-meta {{.Meta}}
+{{end}}

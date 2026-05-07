@@ -1,0 +1,77 @@
+= content body
+  section.panel
+    h2.section-title Team overview
+    p.lead {{.TeamName}}
+    = include partials/stat_grid .Stats
+  section.panel
+    h2.section-title Members
+    .table-wrap
+      table.data-table
+        thead
+          tr
+            th Member
+            th K
+            th D
+            th A
+            th TK
+            th Env
+            th R
+        tbody
+          {{range .Members}}
+          tr
+            td
+              = include partials/name .Name
+            td {{.Kills}}
+            td {{.Deaths}}
+            td {{.Assists}}
+            td {{.Teamkills}}
+            td {{.EnvironmentalDeaths}}
+            td {{.Ratio}}
+          {{end}}
+  section.panel
+    h2.section-title Results by opponent
+    {{if .Matchups}}
+    .table-wrap
+      table.data-table
+        thead
+          tr
+            th Opponent
+            th K
+            th D
+            th R
+        tbody
+          {{range .Matchups}}
+          tr
+            td {{.Opponent}}
+            td {{.Kills}}
+            td {{.Deaths}}
+            td {{.Ratio}}
+          {{end}}
+    {{else}}
+    p.empty-state No cross-team matchups recorded in this event window.
+    {{end}}
+  section.panel
+    h2.section-title Teamkills
+    {{if .Teamkills}}
+    .table-wrap
+      table.data-table
+        thead
+          tr
+            th Time
+            th Victim
+            th Weapon
+            th Range
+            th Note
+        tbody
+          {{range .Teamkills}}
+          tr
+            td {{.Timestamp}}
+            td
+              = include partials/name .Name
+            td {{.Weapon}}
+            td {{.Range}}
+            td {{if .Note}}{{.Note}}{{else}}—{{end}}
+          {{end}}
+    {{else}}
+    p.empty-state No teamkills recorded in this event window.
+    {{end}}

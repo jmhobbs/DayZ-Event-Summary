@@ -1,0 +1,37 @@
+{{if .Rows}}
+section.panel
+  .section-heading
+    div
+      h2.section-title {{.Title}}
+      {{if .Note}}
+      p.section-note {{.Note}}
+      {{end}}
+    {{if .ViewAllHref}}
+    a.section-link href="{{.ViewAllHref}}" View All
+    {{end}}
+  .table-wrap
+    table.data-table
+      thead
+        tr
+          th Player
+          th Team
+          th K
+          th D
+          th A
+          th TK
+          th Env
+          th R
+      tbody
+        {{range .Rows}}
+        tr
+          td
+            = include partials/name .Name
+          td {{if .Team}}{{.Team}}{{else}}—{{end}}
+          td {{.Kills}}
+          td {{.Deaths}}
+          td {{.Assists}}
+          td {{.Teamkills}}
+          td {{.EnvironmentalDeaths}}
+          td {{.Ratio}}
+        {{end}}
+{{end}}

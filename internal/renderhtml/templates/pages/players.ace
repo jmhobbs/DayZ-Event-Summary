@@ -1,0 +1,2 @@
+= content body
+  = include partials/player_table .PlayerSection

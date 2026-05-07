@@ -1,0 +1,170 @@
+= content body
+  section.panel
+    h2.section-title Player overview
+    = include partials/name .PlayerName
+    = include partials/stat_grid .Stats
+  section.panel
+    h2.section-title Kills
+    {{if .Kills}}
+    .table-wrap
+      table.data-table
+        thead
+          tr
+            th Time
+            th Victim
+            th Weapon
+            th Range
+            th Note
+        tbody
+          {{range .Kills}}
+          tr
+            td {{.Timestamp}}
+            td
+              = include partials/name .Name
+            td {{.Weapon}}
+            td {{.Range}}
+            td {{if .Note}}{{.Note}}{{else}}—{{end}}
+          {{end}}
+    {{else}}
+    p.empty-state No kills recorded in this event window.
+    {{end}}
+  section.panel
+    h2.section-title Deaths
+    {{if .Deaths}}
+    .table-wrap
+      table.data-table
+        thead
+          tr
+            th Time
+            th Killer
+            th Weapon
+            th Range
+            th Note
+        tbody
+          {{range .Deaths}}
+          tr
+            td {{.Timestamp}}
+            td
+              = include partials/name .Name
+            td {{.Weapon}}
+            td {{.Range}}
+            td {{if .Note}}{{.Note}}{{else}}—{{end}}
+          {{end}}
+    {{else}}
+    p.empty-state No deaths recorded in this event window.
+    {{end}}
+  section.panel
+    h2.section-title Assists
+    {{if .Assists}}
+    .table-wrap
+      table.data-table
+        thead
+          tr
+            th Time
+            th Killer
+            th Victim
+            th Hits
+        tbody
+          {{range .Assists}}
+          tr
+            td {{.Timestamp}}
+            td
+              = include partials/name .Killer
+            td
+              = include partials/name .Victim
+            td
+              table.data-table.data-table-compact
+                thead
+                  tr
+                    th Weapon
+                    th Range
+                tbody
+                  {{range .Hits}}
+                  tr
+                    td {{.Weapon}}
+                    td {{.Range}}
+                  {{end}}
+          {{end}}
+    {{else}}
+    p.empty-state No assists recorded in this event window.
+    {{end}}
+  section.panel
+    h2.section-title Teamkills
+    {{if .Teamkills}}
+    .table-wrap
+      table.data-table
+        thead
+          tr
+            th Time
+            th Victim
+            th Weapon
+            th Range
+            th Note
+        tbody
+          {{range .Teamkills}}
+          tr
+            td {{.Timestamp}}
+            td
+              = include partials/name .Name
+            td {{.Weapon}}
+            td {{.Range}}
+            td {{if .Note}}{{.Note}}{{else}}—{{end}}
+          {{end}}
+    {{else}}
+    p.empty-state No teamkills recorded in this event window.
+    {{end}}
+  section.panel
+    h2.section-title Environmental deaths
+    {{if .EnvironmentalDeaths}}
+    .table-wrap
+      table.data-table
+        thead
+          tr
+            th Time
+            th Cause
+        tbody
+          {{range .EnvironmentalDeaths}}
+          tr
+            td {{.Timestamp}}
+            td {{.Cause}}
+          {{end}}
+    {{else}}
+    p.empty-state No environmental deaths recorded in this event window.
+    {{end}}
+  .split-grid
+    section.panel
+      h2.section-title Hits dealt
+      {{if .HitsDealt}}
+      .table-wrap
+        table.data-table
+          thead
+            tr
+              th Body part
+              th Count
+          tbody
+            {{range .HitsDealt}}
+            tr
+              td {{.Label}}
+              td {{.Count}}
+            {{end}}
+      {{else}}
+      p.empty-state No hits dealt recorded in this event window.
+      {{end}}
+    section.panel
+      h2.section-title Hits taken
+      {{if .HitsTaken}}
+      .table-wrap
+        table.data-table
+          thead
+            tr
+              th Body part
+              th Count
+          tbody
+            {{range .HitsTaken}}
+            tr
+              td {{.Label}}
+              td {{.Count}}
+            {{end}}
+      {{else}}
+      p.empty-state No hits taken recorded in this event window.
+      {{end}}

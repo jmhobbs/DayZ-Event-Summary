@@ -1,0 +1,5 @@
+= content body
+  = include partials/team_table .TeamSection
+  = include partials/player_table .PlayerSection
+  = include partials/shot_table .HitSection
+  = include partials/shot_table .KillSection

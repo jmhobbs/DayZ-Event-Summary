@@ -1,0 +1,23 @@
+header.site-header
+  .shell.header-shell
+    .header-main
+      div
+        p.eyebrow {{.EventName}}
+        h1.page-heading {{.Heading}}
+        {{if .Subheading}}
+        p.page-subheading {{.Subheading}}
+        {{end}}
+      nav.page-nav
+        a.nav-link href="{{.HomeHref}}" Summary
+        {{if .PlayersHref}}
+        a.nav-link href="{{.PlayersHref}}" Players
+        {{end}}
+        {{if .TeamsHref}}
+        a.nav-link href="{{.TeamsHref}}" Teams
+        {{end}}
+        {{if .HitsHref}}
+        a.nav-link href="{{.HitsHref}}" Hits
+        {{end}}
+        {{if .KillsHref}}
+        a.nav-link href="{{.KillsHref}}" All Kills
+        {{end}}

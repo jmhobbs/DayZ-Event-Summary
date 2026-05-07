@@ -1,0 +1,44 @@
+{{if .Rows}}
+section.panel
+  .section-heading
+    div
+      h2.section-title {{.Title}}
+      {{if .Note}}
+      p.section-note {{.Note}}
+      {{end}}
+    {{if .ViewAllHref}}
+    a.section-link href="{{.ViewAllHref}}" View All
+    {{end}}
+  .table-wrap
+    table.data-table
+      thead
+        tr
+          th Time
+          th Attacker
+          th Victim
+          {{if .ShowResult}}
+          th Result
+          {{end}}
+          {{if .ShowBodyPart}}
+          th Body part
+          {{end}}
+          th Weapon
+          th Range
+      tbody
+        {{range .Rows}}
+        tr
+          td {{.Timestamp}}
+          td
+            = include partials/name .Attacker
+          td
+            = include partials/name .Victim
+          {{if $.ShowResult}}
+          td {{.Result}}
+          {{end}}
+          {{if $.ShowBodyPart}}
+          td {{.BodyPart}}
+          {{end}}
+          td {{.Weapon}}
+          td {{.Range}}
+        {{end}}
+{{end}}
