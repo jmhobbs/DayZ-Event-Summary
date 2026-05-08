@@ -1,6 +1,6 @@
 footer.site-footer
   .shell
     p.footer-copy
-      a href="{{.FooterProjectHref}}" {{.FooterProjectName}}
+      a href="https://github.com/jmhobbs/DayZ-Event-Summary" DayZ Event Summary
       br
-      | {{.FooterText}}
+      | Source: {{ .Generator.SourceFile }} • {{ .Generator.Start }} to {{ .Generator.End }} • Generated: {{ .Generator.GeneratedAt }}

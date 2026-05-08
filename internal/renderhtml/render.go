@@ -39,7 +39,14 @@ type basePageData struct {
 	TeamsHref   string
 	HitsHref    string
 	KillsHref   string
-	FooterText  string
+	Generator   generatorData
+}
+
+type generatorData struct {
+	SourceFile  string
+	Start       string
+	End         string
+	GeneratedAt string
 }
 
 type nameData struct {
@@ -604,7 +611,12 @@ func (r *renderer) basePage(title string, heading string, subheading string, ass
 		TeamsHref:   teamsHref,
 		HitsHref:    hitsHref,
 		KillsHref:   killsHref,
-		FooterText:  fmt.Sprintf("Source: %s • Window: %s to %s • Generated: %s", r.bundle.Metadata.SourceADM, r.bundle.Metadata.WindowStart, r.bundle.Metadata.WindowEnd, r.bundle.Metadata.GeneratedAt),
+		Generator: generatorData{
+			SourceFile:  r.bundle.Metadata.SourceADM,
+			Start:       r.bundle.Metadata.WindowStart,
+			End:         r.bundle.Metadata.WindowEnd,
+			GeneratedAt: r.bundle.Metadata.GeneratedAt,
+		},
 	}
 }
 

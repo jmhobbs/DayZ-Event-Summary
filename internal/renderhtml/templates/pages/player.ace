@@ -1,7 +1,6 @@
 = content body
   section.panel
     h2.section-title Player overview
-    = include partials/name .PlayerName
     = include partials/stat_grid .Stats
   section.panel
     h2.section-title Kills
