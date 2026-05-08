@@ -14,7 +14,6 @@
             th Victim
             th Weapon
             th Range
-            th Note
         tbody
           {{range .Kills}}
           tr
@@ -23,7 +22,6 @@
               = include partials/name .Name
             td {{.Weapon}}
             td {{.Range}}
-            td {{if .Note}}{{.Note}}{{else}}—{{end}}
           {{end}}
     {{else}}
     p.empty-state No kills recorded in this event window.
@@ -39,7 +37,6 @@
             th Killer
             th Weapon
             th Range
-            th Note
         tbody
           {{range .Deaths}}
           tr
@@ -48,7 +45,6 @@
               = include partials/name .Name
             td {{.Weapon}}
             td {{.Range}}
-            td {{if .Note}}{{.Note}}{{else}}—{{end}}
           {{end}}
     {{else}}
     p.empty-state No deaths recorded in this event window.
@@ -99,7 +95,6 @@
             th Victim
             th Weapon
             th Range
-            th Note
         tbody
           {{range .Teamkills}}
           tr
@@ -108,7 +103,6 @@
               = include partials/name .Name
             td {{.Weapon}}
             td {{.Range}}
-            td {{if .Note}}{{.Note}}{{else}}—{{end}}
           {{end}}
     {{else}}
     p.empty-state No teamkills recorded in this event window.
