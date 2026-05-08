@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/jmhobbs/dayz-event-summary/internal/eventbuild"
 	"github.com/yosssi/ace"
@@ -713,9 +714,9 @@ func (r *renderer) indexShots(shots []eventbuild.ShotSummary, hrefPrefix string,
 			Range:     fmt.Sprintf("%.2f m", shot.RangeMeters),
 		}
 		if includeBodyPart {
-			row.BodyPart = dashIfEmpty(shot.BodyPart)
+			row.BodyPart = dashIfEmpty(normalizeBodyPart(shot.BodyPart))
 		} else {
-			row.BodyPart = dashIfEmpty(shot.BodyPart)
+			row.BodyPart = dashIfEmpty(normalizeBodyPart(shot.BodyPart))
 		}
 		rows = append(rows, row)
 	}
@@ -886,7 +887,7 @@ func teamkillNote(explicitTeamkill bool, rowTeamkill bool) string {
 func breakdownRows(values map[string]int) []breakdownRow {
 	rows := make([]breakdownRow, 0, len(values))
 	for label, count := range values {
-		rows = append(rows, breakdownRow{Label: label, Count: count})
+		rows = append(rows, breakdownRow{Label: normalizeBodyPart(label), Count: count})
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].Count != rows[j].Count {
@@ -895,6 +896,28 @@ func breakdownRows(values map[string]int) []breakdownRow {
 		return rows[i].Label < rows[j].Label
 	})
 	return rows
+}
+
+func normalizeBodyPart(value string) string {
+	value = strings.TrimSpace(strings.NewReplacer("_", " ", "-", " ").Replace(value))
+	if value == "" {
+		return ""
+	}
+
+	runes := []rune(value)
+	var builder strings.Builder
+	for index, current := range runes {
+		if index > 0 && unicode.IsUpper(current) {
+			previous := runes[index-1]
+			nextIsLower := index+1 < len(runes) && unicode.IsLower(runes[index+1])
+			if unicode.IsLower(previous) || unicode.IsDigit(previous) || (unicode.IsUpper(previous) && nextIsLower) {
+				builder.WriteRune(' ')
+			}
+		}
+		builder.WriteRune(current)
+	}
+
+	return strings.Join(strings.Fields(builder.String()), " ")
 }
 
 func assignPlayerFiles(playerFiles map[string]string, players []eventbuild.PlayerReport) {

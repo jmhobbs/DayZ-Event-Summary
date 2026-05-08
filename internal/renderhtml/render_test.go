@@ -63,7 +63,7 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 						},
 					},
 				},
-				HitsDealt: eventbuild.HitBreakdown{Total: 3, ByBodyPart: map[string]int{"Head": 2, "Torso": 1}},
+				HitsDealt: eventbuild.HitBreakdown{Total: 3, ByBodyPart: map[string]int{"LeftArm": 2, "Torso": 1}},
 				HitsTaken: eventbuild.HitBreakdown{Total: 1, ByBodyPart: map[string]int{"Torso": 1}},
 			},
 			{
@@ -175,7 +175,7 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 		LongestHits: []eventbuild.ShotSummary{
 			{Timestamp: "15:41:00", AttackerID: "grouped-player", AttackerDisplayName: "One", VictimID: "solo-player", VictimDisplayName: "Solo Survivor", Weapon: "Pioneer", RangeMeters: 220.12, BodyPart: "Head", IsKill: true},
 			{Timestamp: "15:41:10", AttackerID: "player-3", AttackerDisplayName: "Player 3", VictimID: "player-4", VictimDisplayName: "Player 4", Weapon: "Savanna", RangeMeters: 205.34, BodyPart: "Torso", IsKill: false},
-			{Timestamp: "15:41:20", AttackerID: "player-4", AttackerDisplayName: "Player 4", VictimID: "player-5", VictimDisplayName: "Player 5", Weapon: "LAR", RangeMeters: 190.78, BodyPart: "Arm", IsKill: true},
+			{Timestamp: "15:41:20", AttackerID: "player-4", AttackerDisplayName: "Player 4", VictimID: "player-5", VictimDisplayName: "Player 5", Weapon: "LAR", RangeMeters: 190.78, BodyPart: "LeftArm", IsKill: true},
 			{Timestamp: "15:41:30", AttackerID: "player-5", AttackerDisplayName: "Player 5", VictimID: "player-6", VictimDisplayName: "Player 6", Weapon: "Blaze", RangeMeters: 175.67, BodyPart: "Leg", IsKill: false},
 			{Timestamp: "15:41:40", AttackerID: "player-6", AttackerDisplayName: "Player 6", VictimID: "grouped-player", VictimDisplayName: "One", Weapon: "Mosin", RangeMeters: 160.89, BodyPart: "Head", IsKill: false},
 			{Timestamp: "15:40:50", AttackerID: "solo-player", AttackerDisplayName: "Solo Survivor", VictimID: "grouped-player", VictimDisplayName: "One", Weapon: "BK-18", RangeMeters: 140.55, BodyPart: "Torso", IsKill: false},
@@ -230,7 +230,7 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 	assert.NotContains(t, indexContent, "Foxtrot")
 	assert.NotContains(t, indexContent, "Event details")
 	assert.NotContains(t, indexContent, "entity-secondary")
-	assert.Contains(t, indexContent, "DayZ Event Summary")
+	assert.Contains(t, indexContent, ">DayZ Event Summary<")
 	assert.Contains(t, indexContent, "https://github.com/jmhobbs/DayZ-Event-Summary")
 	assert.True(t, strings.Index(indexContent, "href=\"teams/index.html\">View All") < strings.Index(indexContent, "href=\"players/index.html\">View All"))
 
@@ -250,6 +250,8 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 
 	assert.Contains(t, hitsIndexContent, "All ranged hits, sorted longest first.")
 	assert.Contains(t, hitsIndexContent, "140.55 m")
+	assert.Contains(t, hitsIndexContent, "Left Arm")
+	assert.NotContains(t, hitsIndexContent, "LeftArm")
 	assert.Contains(t, hitsIndexContent, "index.html\">Hits<")
 	assert.Contains(t, hitsIndexContent, "../kills/index.html\">All Kills<")
 	assert.NotContains(t, hitsIndexContent, "View All")
@@ -268,6 +270,8 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 	assert.Contains(t, groupedContent, "BK-18")
 	assert.Contains(t, groupedContent, "87.20 m")
 	assert.Contains(t, groupedContent, "Alpha")
+	assert.Contains(t, groupedContent, "Left Arm")
+	assert.NotContains(t, groupedContent, "LeftArm")
 	assert.NotContains(t, groupedContent, ">Back<")
 	assert.Contains(t, groupedContent, "index.html\">Players<")
 	assert.Contains(t, groupedContent, "../teams/index.html\">Teams<")
