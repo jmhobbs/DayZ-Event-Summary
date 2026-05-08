@@ -1,3 +1,6 @@
 footer.site-footer
   .shell
-    p.footer-copy {{.FooterText}}
+    p.footer-copy
+      a href="{{.FooterProjectHref}}" {{.FooterProjectName}}
+      br
+      | {{.FooterText}}

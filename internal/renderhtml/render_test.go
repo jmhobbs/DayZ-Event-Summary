@@ -230,6 +230,8 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 	assert.NotContains(t, indexContent, "Foxtrot")
 	assert.NotContains(t, indexContent, "Event details")
 	assert.NotContains(t, indexContent, "entity-secondary")
+	assert.Contains(t, indexContent, "Built by DayZ Event Summary")
+	assert.Contains(t, indexContent, "https://github.com/jmhobbs/DayZ-Event-Summary")
 	assert.True(t, strings.Index(indexContent, "href=\"teams/index.html\">View All") < strings.Index(indexContent, "href=\"players/index.html\">View All"))
 
 	assert.Contains(t, playersIndexContent, "Full player leaderboard.")
