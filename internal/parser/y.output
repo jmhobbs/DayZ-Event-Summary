@@ -1,0 +1,179 @@
+
+state 0
+	$accept: .log $end 
+
+	TIMESTAMP  shift 4
+	.  error
+
+	logLine  goto 3
+	logLines  goto 2
+	log  goto 1
+
+state 1
+	$accept:  log.$end 
+
+	$end  accept
+	.  error
+
+
+state 2
+	log:  logLines.    (1)
+	logLines:  logLines.logLine 
+
+	TIMESTAMP  shift 4
+	.  reduce 1 (src line 36)
+
+	logLine  goto 5
+
+state 3
+	logLines:  logLine.    (3)
+
+	.  reduce 3 (src line 46)
+
+
+state 4
+	logLine:  TIMESTAMP.TOK_PIPE player TOK_IS TOK_CONNECTING 
+
+	TOK_PIPE  shift 6
+	.  error
+
+
+state 5
+	logLines:  logLines logLine.    (2)
+
+	.  reduce 2 (src line 42)
+
+
+state 6
+	logLine:  TIMESTAMP TOK_PIPE.player TOK_IS TOK_CONNECTING 
+
+	TOK_PLAYER  shift 8
+	.  error
+
+	player  goto 7
+
+state 7
+	logLine:  TIMESTAMP TOK_PIPE player.TOK_IS TOK_CONNECTING 
+
+	TOK_IS  shift 9
+	.  error
+
+
+state 8
+	player:  TOK_PLAYER.STRING ID 
+	player:  TOK_PLAYER.STRING ID position 
+
+	STRING  shift 10
+	.  error
+
+
+state 9
+	logLine:  TIMESTAMP TOK_PIPE player TOK_IS.TOK_CONNECTING 
+
+	TOK_CONNECTING  shift 11
+	.  error
+
+
+state 10
+	player:  TOK_PLAYER STRING.ID 
+	player:  TOK_PLAYER STRING.ID position 
+
+	ID  shift 12
+	.  error
+
+
+state 11
+	logLine:  TIMESTAMP TOK_PIPE player TOK_IS TOK_CONNECTING.    (4)
+
+	.  reduce 4 (src line 51)
+
+
+state 12
+	player:  TOK_PLAYER STRING ID.    (5)
+	player:  TOK_PLAYER STRING ID.position 
+
+	TOK_POS  shift 14
+	.  reduce 5 (src line 59)
+
+	position  goto 13
+
+state 13
+	player:  TOK_PLAYER STRING ID position.    (6)
+
+	.  reduce 6 (src line 64)
+
+
+state 14
+	position:  TOK_POS.TOK_EQUALS TOK_LEFT_ARROW FLOAT TOK_COMMA FLOAT TOK_COMMA FLOAT TOK_COMMA 
+
+	TOK_EQUALS  shift 15
+	.  error
+
+
+state 15
+	position:  TOK_POS TOK_EQUALS.TOK_LEFT_ARROW FLOAT TOK_COMMA FLOAT TOK_COMMA FLOAT TOK_COMMA 
+
+	TOK_LEFT_ARROW  shift 16
+	.  error
+
+
+state 16
+	position:  TOK_POS TOK_EQUALS TOK_LEFT_ARROW.FLOAT TOK_COMMA FLOAT TOK_COMMA FLOAT TOK_COMMA 
+
+	FLOAT  shift 17
+	.  error
+
+
+state 17
+	position:  TOK_POS TOK_EQUALS TOK_LEFT_ARROW FLOAT.TOK_COMMA FLOAT TOK_COMMA FLOAT TOK_COMMA 
+
+	TOK_COMMA  shift 18
+	.  error
+
+
+state 18
+	position:  TOK_POS TOK_EQUALS TOK_LEFT_ARROW FLOAT TOK_COMMA.FLOAT TOK_COMMA FLOAT TOK_COMMA 
+
+	FLOAT  shift 19
+	.  error
+
+
+state 19
+	position:  TOK_POS TOK_EQUALS TOK_LEFT_ARROW FLOAT TOK_COMMA FLOAT.TOK_COMMA FLOAT TOK_COMMA 
+
+	TOK_COMMA  shift 20
+	.  error
+
+
+state 20
+	position:  TOK_POS TOK_EQUALS TOK_LEFT_ARROW FLOAT TOK_COMMA FLOAT TOK_COMMA.FLOAT TOK_COMMA 
+
+	FLOAT  shift 21
+	.  error
+
+
+state 21
+	position:  TOK_POS TOK_EQUALS TOK_LEFT_ARROW FLOAT TOK_COMMA FLOAT TOK_COMMA FLOAT.TOK_COMMA 
+
+	TOK_COMMA  shift 22
+	.  error
+
+
+state 22
+	position:  TOK_POS TOK_EQUALS TOK_LEFT_ARROW FLOAT TOK_COMMA FLOAT TOK_COMMA FLOAT TOK_COMMA.    (7)
+
+	.  reduce 7 (src line 70)
+
+
+17 terminals, 6 nonterminals
+8 grammar rules, 23/16000 states
+0 shift/reduce, 0 reduce/reduce conflicts reported
+55 working sets used
+memory: parser 5/240000
+0 extra closures
+17 shift entries, 1 exceptions
+6 goto entries
+0 entries saved by goto default
+Optimizer space used: output 22/240000
+22 table entries, 0 zero
+maximum spread: 16, maximum offset: 16
