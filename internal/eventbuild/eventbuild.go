@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/invopop/jsonschema"
 	"github.com/jmhobbs/dayz-event-summary/internal/teamguess"
 )
 
@@ -66,6 +67,11 @@ type playerAccumulator struct {
 type teamAccumulator struct {
 	Report   TeamReport
 	Matchups map[string]*TeamMatchupSummary
+}
+
+type bundleFile struct {
+	Name  string
+	Value any
 }
 
 func Build(reader io.Reader, sourceADM string, options BuildOptions) (*Bundle, error) {
@@ -123,31 +129,58 @@ func WriteBundle(bundle *Bundle, outputDir string) error {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	files := []struct {
-		name  string
-		value any
-	}{
-		{name: "metadata.json", value: bundle.Metadata},
-		{name: "roster.json", value: bundle.Roster},
-		{name: "events.json", value: bundle.Events},
-		{name: "players.json", value: bundle.Players},
-		{name: "teams.json", value: bundle.Teams},
-		{name: "summary.json", value: bundle.Summary},
-	}
-
-	for _, file := range files {
-		rendered, err := json.MarshalIndent(file.value, "", "  ")
+	for _, file := range bundleFiles(bundle) {
+		rendered, err := json.MarshalIndent(file.Value, "", "  ")
 		if err != nil {
-			return fmt.Errorf("marshal %s: %w", file.name, err)
+			return fmt.Errorf("marshal %s: %w", file.Name, err)
 		}
 		rendered = append(rendered, '\n')
 
-		if err := os.WriteFile(filepath.Join(outputDir, file.name), rendered, 0o644); err != nil {
-			return fmt.Errorf("write %s: %w", file.name, err)
+		if err := os.WriteFile(filepath.Join(outputDir, file.Name), rendered, 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", file.Name, err)
+		}
+
+		schema, err := marshalSchema(file.Value)
+		if err != nil {
+			return fmt.Errorf("marshal %s schema: %w", file.Name, err)
+		}
+
+		schemaPath := filepath.Join(outputDir, schemaFileName(file.Name))
+		if err := os.WriteFile(schemaPath, schema, 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", schemaFileName(file.Name), err)
 		}
 	}
 
 	return nil
+}
+
+func bundleFiles(bundle *Bundle) []bundleFile {
+	return []bundleFile{
+		{Name: "metadata.json", Value: bundle.Metadata},
+		{Name: "roster.json", Value: bundle.Roster},
+		{Name: "events.json", Value: bundle.Events},
+		{Name: "players.json", Value: bundle.Players},
+		{Name: "teams.json", Value: bundle.Teams},
+		{Name: "summary.json", Value: bundle.Summary},
+	}
+}
+
+func marshalSchema(value any) ([]byte, error) {
+	reflector := jsonschema.Reflector{
+		Anonymous:      true,
+		ExpandedStruct: true,
+	}
+
+	rendered, err := json.MarshalIndent(reflector.Reflect(value), "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	return append(rendered, '\n'), nil
+}
+
+func schemaFileName(fileName string) string {
+	return strings.TrimSuffix(fileName, ".json") + ".schema.json"
 }
 
 func buildAssignments(config TeamConfig) map[string]teamAssignment {
@@ -273,6 +306,9 @@ func parseEvents(reader io.Reader, window teamguess.Window, roster map[string]ro
 
 		if matches := hitPattern.FindStringSubmatch(line); len(matches) > 0 {
 			if matches[3] != "" {
+				continue
+			}
+			if strings.TrimSpace(matches[10]) == "TransportHit" {
 				continue
 			}
 			if isIgnoredID(ignoredIDs, matches[4]) || isIgnoredID(ignoredIDs, matches[6]) {

@@ -141,11 +141,19 @@ Flags:
 `build` writes:
 
 - `metadata.json`
+- `metadata.schema.json`
 - `roster.json`
+- `roster.schema.json`
 - `events.json`
+- `events.schema.json`
 - `players.json`
+- `players.schema.json`
 - `teams.json`
+- `teams.schema.json`
 - `summary.json`
+- `summary.schema.json`
+
+Each `*.schema.json` file is a JSON Schema for the matching data file.
 
 If `teams_event: true`, `build` requires sibling `teams.yaml` unless `--teams` is set.
 

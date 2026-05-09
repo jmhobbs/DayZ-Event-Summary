@@ -1,6 +1,7 @@
 package eventbuild
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -168,6 +169,52 @@ func TestBuildCreatesNormalizedBundle(t *testing.T) {
 	assert.True(t, bundle.Summary.LongestKills[0].IsKill)
 }
 
+func TestBuildIgnoresTransportHitLines(t *testing.T) {
+	t.Parallel()
+
+	settings, err := LoadEventSettings(strings.NewReader("event_name: Transport Filter Test\nassist_window_seconds: 30\n"))
+	require.NoError(t, err)
+
+	teams, err := LoadTeamConfig(strings.NewReader("teams: []\nungrouped: []\nignored: []\n"))
+	require.NoError(t, err)
+
+	log := strings.Join([]string{
+		`15:40:00 | Player "Driver" (id=driver-1) is connecting`,
+		`15:40:01 | Player "Target" (id=target-1) is connecting`,
+		`15:40:10 | Player "Target" (id=target-1 pos=<1,1,1>)[HP: 90] hit by Player "Driver" (id=driver-1 pos=<2,2,2>) into Torso(1) for 10 damage (TransportHit) with TransportHit`,
+		`15:40:15 | Player "Target" (id=target-1 pos=<1,1,1>)[HP: 80] hit by Player "Driver" (id=driver-1 pos=<2,2,2>) into Torso(1) for 10 damage (Bullet_556x45) with Pioneer from 20.0 meters`,
+		`15:40:20 | Player "Target" (DEAD) (id=target-1 pos=<1,1,1>) killed by Player "Driver" (id=driver-1 pos=<2,2,2>) with Pioneer from 20.0 meters`,
+	}, "\n")
+
+	bundle, err := Build(strings.NewReader(log), "sample.ADM", BuildOptions{
+		Window: teamguess.Window{
+			Start: 15*time.Hour + 40*time.Minute,
+			End:   15*time.Hour + 41*time.Minute,
+		},
+		WindowStart: "15:40:00",
+		WindowEnd:   "15:41:00",
+		Settings:    settings,
+		Teams:       teams,
+		GeneratedAt: time.Date(2026, 5, 7, 1, 0, 0, 0, time.UTC),
+	})
+	require.NoError(t, err)
+
+	require.Len(t, bundle.Events.Hits, 1)
+	assert.Equal(t, "Pioneer", bundle.Events.Hits[0].Weapon)
+	assert.Equal(t, "Bullet_556x45", bundle.Events.Hits[0].AmmoType)
+	assert.Empty(t, bundle.Warnings)
+
+	playerByID := map[string]PlayerReport{}
+	for _, player := range bundle.Players.Players {
+		playerByID[player.PlayerID] = player
+	}
+
+	assert.Equal(t, 1, playerByID["driver-1"].HitsDealt.Total)
+	assert.Equal(t, 1, playerByID["target-1"].HitsTaken.Total)
+	require.Len(t, bundle.Summary.LongestHits, 1)
+	assert.Equal(t, "Pioneer", bundle.Summary.LongestHits[0].Weapon)
+}
+
 func TestBuildExcludesIgnoredUsersFromBundle(t *testing.T) {
 	t.Parallel()
 
@@ -299,4 +346,66 @@ func TestWriteBundleWritesExpectedFiles(t *testing.T) {
 		_, err := os.Stat(filepath.Join(tempDir, name))
 		require.NoError(t, err, name)
 	}
+
+	for _, name := range []string{
+		"metadata.schema.json",
+		"roster.schema.json",
+		"events.schema.json",
+		"players.schema.json",
+		"teams.schema.json",
+		"summary.schema.json",
+	} {
+		_, err := os.Stat(filepath.Join(tempDir, name))
+		require.NoError(t, err, name)
+	}
+}
+
+func TestWriteBundleWritesSchemasForBundleTypes(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	bundle := &Bundle{
+		Metadata: Metadata{SourceADM: "sample.ADM"},
+		Roster:   RosterFile{Players: []RosterPlayer{{PlayerID: "p1", PreferredName: "Player 1", DisplayName: "Player 1"}}},
+		Events:   EventsFile{},
+		Players:  PlayersFile{},
+		Teams:    TeamsFile{},
+		Summary:  SummaryFile{},
+	}
+
+	require.NoError(t, WriteBundle(bundle, tempDir))
+
+	metadataSchema := readJSONSchema(t, filepath.Join(tempDir, "metadata.schema.json"))
+	assert.Equal(t, "object", metadataSchema["type"])
+
+	metadataProperties, ok := metadataSchema["properties"].(map[string]any)
+	require.True(t, ok)
+	require.Contains(t, metadataProperties, "source_adm")
+	assert.Equal(t, "string", metadataProperties["source_adm"].(map[string]any)["type"])
+	require.Contains(t, metadataProperties, "team_count")
+
+	playersSchema := readJSONSchema(t, filepath.Join(tempDir, "players.schema.json"))
+	assert.Equal(t, "object", playersSchema["type"])
+
+	playerProperties, ok := playersSchema["properties"].(map[string]any)
+	require.True(t, ok)
+	playersProperty, ok := playerProperties["players"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "array", playersProperty["type"])
+
+	items, ok := playersProperty["items"].(map[string]any)
+	require.True(t, ok)
+	assert.NotEmpty(t, items["$ref"])
+}
+
+func readJSONSchema(t *testing.T, path string) map[string]any {
+	t.Helper()
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	var schema map[string]any
+	require.NoError(t, json.Unmarshal(content, &schema))
+
+	return schema
 }
