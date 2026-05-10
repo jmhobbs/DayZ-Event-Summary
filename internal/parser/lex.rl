@@ -53,6 +53,11 @@ func (lex *lexer) Lex(out *yySymType) int {
               tok = FLOAT;
               fbreak;
             };
+            'Emote'[a-zA-Z]+ => {
+              tok = EMOTE;
+              out.stringValue = string(lex.data[lex.ts+5:lex.te]);
+              fbreak;
+            };
             'Player' => {
               tok = TOK_PLAYER;
               fbreak;
@@ -61,6 +66,7 @@ func (lex *lexer) Lex(out *yySymType) int {
               tok = TOK_IS;
               fbreak;
             };
+            # Actions
             'connecting' => {
               tok = TOK_CONNECTING;
               fbreak;
@@ -69,6 +75,11 @@ func (lex *lexer) Lex(out *yySymType) int {
               tok = TOK_CONNECTED;
               fbreak;
             };
+            'performed' => {
+              tok = TOK_PERFORMED;
+              fbreak;
+            };
+            # Char literals
             [|<>,()] => {
               tok = int(lex.data[lex.ts])
               fbreak;

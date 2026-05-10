@@ -5,9 +5,9 @@ import "fmt"
 %}
 
 %token STRING FLOAT
-%token TIMESTAMP ID
+%token TIMESTAMP ID EMOTE
 %token TOK_PLAYER TOK_ID TOK_IS TOK_POS
-%token TOK_CONNECTING TOK_CONNECTED
+%token TOK_CONNECTING TOK_CONNECTED TOK_PERFORMED
 
 %union {
   line LogLine
@@ -19,13 +19,13 @@ import "fmt"
   position Position
 }
 
-%token <stringValue> STRING ID TIMESTAMP
+%token <stringValue> STRING ID TIMESTAMP EMOTE
 %token <floatValue> FLOAT
 
 %type <player> player
 %type <position> position
 
-%type <line> connectingLine connectedLine
+%type <line> connectingLine connectedLine emoteLine
 
 %%
 
@@ -34,6 +34,9 @@ logLine
     line = $1
   }
   | connectedLine {
+    line = $1
+  }
+  | emoteLine {
     line = $1
   }
   ;
@@ -53,6 +56,16 @@ connectedLine
     $$ = LogLine{
       Timestamp: $1,
       Type: "CONNECTED",
+      Player: &$3,
+    }
+  }
+  ;
+
+emoteLine
+  : TIMESTAMP '|' player TOK_PERFORMED EMOTE {
+    $$ = LogLine{
+      Timestamp: $1,
+      Type: "EMOTE",
       Player: &$3,
     }
   }
