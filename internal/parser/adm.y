@@ -6,70 +6,88 @@ import "fmt"
 
 %token STRING FLOAT
 %token TIMESTAMP ID
-%token TOK_PIPE TOK_LEFT_ARROW TOK_RIGHT_ARROW TOK_EQUALS TOK_COMMA
-%token TOK_PLAYER TOK_IS TOK_POS
+%token TOK_PIPE TOK_LEFT_ARROW TOK_RIGHT_ARROW TOK_EQUALS TOK_COMMA TOK_LEFT_PAREN TOK_RIGHT_PAREN
+%token TOK_PLAYER TOK_ID TOK_IS TOK_POS
 %token TOK_CONNECTING TOK_CONNECTED
 
 %union {
-  lines []LogLine
   line LogLine
 
   stringValue string
   floatValue float64
 
-  timestamp string
-  playerID string
+  player Player
+  position Position
 }
 
-
-%token <stringValue> STRING
+%token <stringValue> STRING ID TIMESTAMP
 %token <floatValue> FLOAT
 
-%token <timestamp> TIMESTAMP
-%token <playerID> ID
+%type <player> player
+%type <position> position
 
-%type <line> logLine
-%type <lines> logLines
+%type <line> connectingLine connectedLine
 
 %%
 
-log
-  : logLines {
-    log = $1
-  }
-  ;
-
-logLines
-  : logLines logLine {
-    $$ = append($1, $2)
-  }
-  | logLine {
-    $$ = []LogLine{$1}
-  }
-  ;
-
 logLine
+  : connectingLine {
+    line = $1
+  }
+  | connectedLine {
+    line = $1
+  }
+  ;
+
+connectingLine
   : TIMESTAMP TOK_PIPE player TOK_IS TOK_CONNECTING {
     $$ = LogLine{
       Timestamp: $1,
+      Type: "CONNECTING",
+      Player: &$3,
+    }
+  }
+  ;
+
+connectedLine
+  : TIMESTAMP TOK_PIPE player TOK_IS TOK_CONNECTED {
+    $$ = LogLine{
+      Timestamp: $1,
+      Type: "CONNECTED",
+      Player: &$3,
     }
   }
   ;
 
 player
-  : TOK_PLAYER STRING ID {
+  : TOK_PLAYER STRING TOK_LEFT_PAREN ID TOK_RIGHT_PAREN {
     fmt.Printf("!! player: %s\n", $2)
-    fmt.Printf("!!     id: %s\n", $3)
+    fmt.Printf("!!     id: %s\n", $4)
+    $$ = Player{
+      Name: $2,
+      ID: $4,
+    }
   }
-  | TOK_PLAYER STRING ID position {
+  | TOK_PLAYER STRING TOK_LEFT_PAREN ID position TOK_RIGHT_PAREN {
     fmt.Printf("!! player: %s\n", $2)
-    fmt.Printf("!!     id: %s\n", $3)
+    fmt.Printf("!!     id: %s\n", $4)
+    fmt.Printf("!!     pos: <%f, %f, %f>\n", $5.X, $5.Y, $5.Z)
+    $$ = Player{
+      Name: $2,
+      ID: $4,
+      Position: &$5,
+    }
   }
   ;
 
 position
-  : TOK_POS TOK_EQUALS TOK_LEFT_ARROW FLOAT TOK_COMMA FLOAT TOK_COMMA FLOAT TOK_COMMA {
-    fmt.Printf("!!     position: <%f, %f, %f>\n", $4, $6, $8)
+  : TOK_POS TOK_LEFT_ARROW FLOAT TOK_COMMA FLOAT TOK_COMMA FLOAT TOK_RIGHT_ARROW {
+    fmt.Printf("!!     position: <%f, %f, %f>\n", $3, $5, $7)
+    $$ = Position{
+      X: $3,
+      Y: $5,
+      Z: $7,
+    }
   }
   ;
 

@@ -11,15 +11,14 @@ import "fmt"
 
 //line adm.y:13
 type yySymType struct {
-	yys   int
-	lines []LogLine
-	line  LogLine
+	yys  int
+	line LogLine
 
 	stringValue string
 	floatValue  float64
 
-	timestamp string
-	playerID  string
+	player   Player
+	position Position
 }
 
 const STRING = 57346
@@ -31,11 +30,14 @@ const TOK_LEFT_ARROW = 57351
 const TOK_RIGHT_ARROW = 57352
 const TOK_EQUALS = 57353
 const TOK_COMMA = 57354
-const TOK_PLAYER = 57355
-const TOK_IS = 57356
-const TOK_POS = 57357
-const TOK_CONNECTING = 57358
-const TOK_CONNECTED = 57359
+const TOK_LEFT_PAREN = 57355
+const TOK_RIGHT_PAREN = 57356
+const TOK_PLAYER = 57357
+const TOK_ID = 57358
+const TOK_IS = 57359
+const TOK_POS = 57360
+const TOK_CONNECTING = 57361
+const TOK_CONNECTED = 57362
 
 var yyToknames = [...]string{
 	"$end",
@@ -50,7 +52,10 @@ var yyToknames = [...]string{
 	"TOK_RIGHT_ARROW",
 	"TOK_EQUALS",
 	"TOK_COMMA",
+	"TOK_LEFT_PAREN",
+	"TOK_RIGHT_PAREN",
 	"TOK_PLAYER",
+	"TOK_ID",
 	"TOK_IS",
 	"TOK_POS",
 	"TOK_CONNECTING",
@@ -63,7 +68,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyInitialStackSize = 16
 
-//line adm.y:76
+//line adm.y:94
 
 // 15:34:20 | Player "jmhobbs" (id=BFDIjY8X3a21fFxgXW339fE0IsxOK0kI7xlfig3HN1I= pos=<17491.9, 6849.4, 16.1>) is connected
 
@@ -76,42 +81,42 @@ var yyExca = [...]int8{
 
 const yyPrivate = 57344
 
-const yyLast = 22
+const yyLast = 24
 
 var yyAct = [...]int8{
-	11, 14, 9, 8, 22, 20, 18, 15, 16, 6,
-	12, 4, 21, 19, 17, 10, 3, 13, 7, 5,
-	1, 2,
+	10, 11, 14, 8, 7, 17, 16, 12, 22, 20,
+	24, 18, 5, 13, 4, 23, 21, 19, 9, 1,
+	3, 2, 15, 6,
 }
 
 var yyPact = [...]int16{
-	5, -1000, 5, -1000, 1, -1000, -10, -12, 11, -16,
-	3, -1000, -14, -1000, -4, -1, 9, -6, 8, -7,
-	7, -8, -1000,
+	8, -1000, -1000, -1000, 4, -11, -14, 14, -19, -6,
+	-1000, -1000, 6, -12, -1000, -9, 2, -1000, 12, -3,
+	11, -4, 10, 0, -1000,
 }
 
 var yyPgo = [...]int8{
-	0, 16, 21, 20, 18, 17,
+	0, 23, 22, 21, 20, 19,
 }
 
 var yyR1 = [...]int8{
-	0, 3, 2, 2, 1, 4, 4, 5,
+	0, 5, 5, 3, 4, 1, 1, 2,
 }
 
 var yyR2 = [...]int8{
-	0, 1, 2, 1, 5, 3, 4, 9,
+	0, 1, 1, 5, 5, 5, 6, 8,
 }
 
 var yyChk = [...]int16{
-	-1000, -3, -2, -1, 6, -1, 8, -4, 13, 14,
-	4, 16, 7, -5, 15, 11, 9, 5, 12, 5,
-	12, 5, 12,
+	-1000, -5, -3, -4, 6, 8, -1, 15, 17, 4,
+	19, 20, 13, 7, 14, -2, 18, 14, 9, 5,
+	12, 5, 12, 5, 10,
 }
 
 var yyDef = [...]int8{
-	0, -2, 1, 3, 0, 2, 0, 0, 0, 0,
-	0, 4, 5, 6, 0, 0, 0, 0, 0, 0,
-	0, 0, 7,
+	0, -2, 1, 2, 0, 0, 0, 0, 0, 0,
+	3, 4, 0, 0, 5, 0, 0, 6, 0, 0,
+	0, 0, 0, 0, 7,
 }
 
 var yyTok1 = [...]int8{
@@ -120,7 +125,7 @@ var yyTok1 = [...]int8{
 
 var yyTok2 = [...]int8{
 	2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-	12, 13, 14, 15, 16, 17,
+	12, 13, 14, 15, 16, 17, 18, 19, 20,
 }
 
 var yyTok3 = [...]int8{
@@ -466,49 +471,70 @@ yydefault:
 
 	case 1:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line adm.y:37
+//line adm.y:34
 		{
-			log = yyDollar[1].lines
+			line = yyDollar[1].line
 		}
 	case 2:
-		yyDollar = yyS[yypt-2 : yypt+1]
-//line adm.y:43
+		yyDollar = yyS[yypt-1 : yypt+1]
+//line adm.y:37
 		{
-			yyVAL.lines = append(yyDollar[1].lines, yyDollar[2].line)
+			line = yyDollar[1].line
 		}
 	case 3:
-		yyDollar = yyS[yypt-1 : yypt+1]
-//line adm.y:46
+		yyDollar = yyS[yypt-5 : yypt+1]
+//line adm.y:43
 		{
-			yyVAL.lines = []LogLine{yyDollar[1].line}
+			yyVAL.line = LogLine{
+				Timestamp: yyDollar[1].stringValue,
+				Type:      "CONNECTING",
+				Player:    &yyDollar[3].player,
+			}
 		}
 	case 4:
 		yyDollar = yyS[yypt-5 : yypt+1]
-//line adm.y:52
+//line adm.y:53
 		{
 			yyVAL.line = LogLine{
-				Timestamp: yyDollar[1].timestamp,
+				Timestamp: yyDollar[1].stringValue,
+				Type:      "CONNECTED",
+				Player:    &yyDollar[3].player,
 			}
 		}
 	case 5:
-		yyDollar = yyS[yypt-3 : yypt+1]
-//line adm.y:60
+		yyDollar = yyS[yypt-5 : yypt+1]
+//line adm.y:63
 		{
 			fmt.Printf("!! player: %s\n", yyDollar[2].stringValue)
-			fmt.Printf("!!     id: %s\n", yyDollar[3].playerID)
+			fmt.Printf("!!     id: %s\n", yyDollar[4].stringValue)
+			yyVAL.player = Player{
+				Name: yyDollar[2].stringValue,
+				ID:   yyDollar[4].stringValue,
+			}
 		}
 	case 6:
-		yyDollar = yyS[yypt-4 : yypt+1]
-//line adm.y:64
-		{
-			fmt.Printf("!! player: %s\n", yyDollar[2].stringValue)
-			fmt.Printf("!!     id: %s\n", yyDollar[3].playerID)
-		}
-	case 7:
-		yyDollar = yyS[yypt-9 : yypt+1]
+		yyDollar = yyS[yypt-6 : yypt+1]
 //line adm.y:71
 		{
-			fmt.Printf("!!     position: <%f, %f, %f>\n", yyDollar[4].floatValue, yyDollar[6].floatValue, yyDollar[8].floatValue)
+			fmt.Printf("!! player: %s\n", yyDollar[2].stringValue)
+			fmt.Printf("!!     id: %s\n", yyDollar[4].stringValue)
+			fmt.Printf("!!     pos: <%f, %f, %f>\n", yyDollar[5].position.X, yyDollar[5].position.Y, yyDollar[5].position.Z)
+			yyVAL.player = Player{
+				Name:     yyDollar[2].stringValue,
+				ID:       yyDollar[4].stringValue,
+				Position: &yyDollar[5].position,
+			}
+		}
+	case 7:
+		yyDollar = yyS[yypt-8 : yypt+1]
+//line adm.y:84
+		{
+			fmt.Printf("!!     position: <%f, %f, %f>\n", yyDollar[3].floatValue, yyDollar[5].floatValue, yyDollar[7].floatValue)
+			yyVAL.position = Position{
+				X: yyDollar[3].floatValue,
+				Y: yyDollar[5].floatValue,
+				Z: yyDollar[7].floatValue,
+			}
 		}
 	}
 	goto yystack /* stack new state and value */

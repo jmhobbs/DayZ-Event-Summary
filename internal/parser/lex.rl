@@ -26,17 +26,22 @@ func (lex *lexer) Lex(out *yySymType) int {
         main := |*
             [0-9][0-9]':'[0-9][0-9]':'[0-9][0-9] => {
               tok = TIMESTAMP;
-              out.timestamp = string(lex.data[lex.ts:lex.te]);
+              out.stringValue = string(lex.data[lex.ts:lex.te]);
               fbreak;
             };
             '"'[^"]*'"' => {
               tok = STRING;
-              out.stringValue = string(lex.data[lex.ts:lex.te]);
+              out.stringValue = string(lex.data[lex.ts+1:lex.te-1]);
               fbreak;
             };
-            '(id='[^"]*')' => {
+            'id='[a-zA-Z0-9=]+ => {
               tok = ID;
-              out.playerID = string(lex.data[lex.ts:lex.te]);
+              // todo remove id=
+              out.stringValue = string(lex.data[lex.ts+3:lex.te]);
+              fbreak;
+            };
+            'pos=' => {
+              tok = TOK_POS;
               fbreak;
             };
             [0-9]+'.'[0-9]+ => {
@@ -64,10 +69,6 @@ func (lex *lexer) Lex(out *yySymType) int {
               tok = TOK_CONNECTED;
               fbreak;
             };
-            'pos' => {
-              tok = TOK_POS;
-              fbreak;
-            };
             '|' => {
               tok = TOK_PIPE;
               fbreak;
@@ -86,6 +87,14 @@ func (lex *lexer) Lex(out *yySymType) int {
             };
             '=' => {
               tok = TOK_EQUALS;
+              fbreak;
+            };
+            '(' => {
+              tok = TOK_LEFT_PAREN;
+              fbreak;
+            };
+            ')' => {
+              tok = TOK_RIGHT_PAREN;
               fbreak;
             };
             space;
