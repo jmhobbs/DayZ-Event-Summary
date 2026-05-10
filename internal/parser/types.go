@@ -3,7 +3,8 @@ package parser
 type LogLine struct {
 	Timestamp string
 	Type      string
-	Player    *Player
+	Subject   *Player
+	Object    *Player
 }
 
 type Player struct {

@@ -34,9 +34,8 @@ func (lex *lexer) Lex(out *yySymType) int {
               out.stringValue = string(lex.data[lex.ts+1:lex.te-1]);
               fbreak;
             };
-            'id='[a-zA-Z0-9=]+ => {
+            'id='[a-zA-Z0-9=_\-]+ => {
               tok = ID;
-              // todo remove id=
               out.stringValue = string(lex.data[lex.ts+3:lex.te]);
               fbreak;
             };
@@ -53,8 +52,22 @@ func (lex *lexer) Lex(out *yySymType) int {
               tok = FLOAT;
               fbreak;
             };
+            [0-9]+ => {
+              n, err := strconv.ParseInt(string(lex.data[lex.ts:lex.te]), 10, 64);
+              if err != nil {
+                panic(err)
+              }
+              out.intValue = n;
+              tok = INTEGER;
+              fbreak;
+            };
             'Emote'[a-zA-Z]+ => {
               tok = EMOTE;
+              out.stringValue = string(lex.data[lex.ts+5:lex.te]);
+              fbreak;
+            };
+            'into '[a-zA-Z]+ => {
+              tok = INTO;
               out.stringValue = string(lex.data[lex.ts+5:lex.te]);
               fbreak;
             };
@@ -62,8 +75,24 @@ func (lex *lexer) Lex(out *yySymType) int {
               tok = TOK_PLAYER;
               fbreak;
             };
+            'HP:' => {
+              tok = TOK_HP;
+              fbreak;
+            };
+            'hit by' => {
+              tok = TOK_HITBY;
+              fbreak;
+            };
             'is' => {
               tok = TOK_IS;
+              fbreak;
+            };
+            'for' => {
+              tok = TOK_FOR;
+              fbreak;
+            };
+            'damage' => {
+              tok = TOK_DAMAGE;
               fbreak;
             };
             # Actions
@@ -79,8 +108,13 @@ func (lex *lexer) Lex(out *yySymType) int {
               tok = TOK_PERFORMED;
               fbreak;
             };
+            [a-zA-Z]+ => {
+              tok = IDENTIFIER;
+              out.stringValue = string(lex.data[lex.ts:lex.te]);
+              fbreak;
+            };
             # Char literals
-            [|<>,()] => {
+            [|<>,()\[\]] => {
               tok = int(lex.data[lex.ts])
               fbreak;
             };
