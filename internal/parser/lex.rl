@@ -69,32 +69,8 @@ func (lex *lexer) Lex(out *yySymType) int {
               tok = TOK_CONNECTED;
               fbreak;
             };
-            '|' => {
-              tok = TOK_PIPE;
-              fbreak;
-            };
-            '<' => {
-              tok = TOK_LEFT_ARROW;
-              fbreak;
-            };
-            '>' => {
-              tok = TOK_RIGHT_ARROW;
-              fbreak;
-            };
-            ',' => {
-              tok = TOK_COMMA;
-              fbreak;
-            };
-            '=' => {
-              tok = TOK_EQUALS;
-              fbreak;
-            };
-            '(' => {
-              tok = TOK_LEFT_PAREN;
-              fbreak;
-            };
-            ')' => {
-              tok = TOK_RIGHT_PAREN;
+            [|<>,()] => {
+              tok = int(lex.data[lex.ts])
               fbreak;
             };
             space;
@@ -105,4 +81,3 @@ func (lex *lexer) Lex(out *yySymType) int {
 
     return tok;
 }
-
