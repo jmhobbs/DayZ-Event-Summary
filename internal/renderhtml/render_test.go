@@ -236,6 +236,7 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 
 	assert.Contains(t, playersIndexContent, "Full player leaderboard.")
 	assert.Contains(t, playersIndexContent, "Player 6")
+	assert.Contains(t, playersIndexContent, "players/"+groupedPlayerFile)
 	assert.Contains(t, playersIndexContent, "index.html\">Players<")
 	assert.Contains(t, playersIndexContent, "../hits/index.html\">Hits<")
 	assert.Contains(t, playersIndexContent, "../kills/index.html\">All Kills<")
@@ -243,6 +244,7 @@ func TestRenderGeneratesStaticSite(t *testing.T) {
 
 	assert.Contains(t, teamsIndexContent, "Full team leaderboard.")
 	assert.Contains(t, teamsIndexContent, "Foxtrot")
+	assert.Contains(t, teamsIndexContent, "teams/"+slugify("Alpha")+".html")
 	assert.Contains(t, teamsIndexContent, "index.html\">Teams<")
 	assert.Contains(t, teamsIndexContent, "../hits/index.html\">Hits<")
 	assert.Contains(t, teamsIndexContent, "../kills/index.html\">All Kills<")

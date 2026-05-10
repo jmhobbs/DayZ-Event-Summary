@@ -411,7 +411,7 @@ func (r *renderer) renderPlayersIndex(path string) error {
 		PlayerSection: playerTableData{
 			Title: "Players",
 			Note:  "Full leaderboard sorted by kills, deaths, and ratio.",
-			Rows:  r.indexPlayers(""),
+			Rows:  r.indexPlayers("players/"),
 		},
 	}
 
@@ -523,7 +523,7 @@ func (r *renderer) renderTeamsIndex(path string) error {
 		TeamSection: teamTableData{
 			Title: "Teams",
 			Note:  "Full leaderboard sorted by kills, deaths, and ratio.",
-			Rows:  r.indexTeams(""),
+			Rows:  r.indexTeams("teams/"),
 		},
 	}
 
